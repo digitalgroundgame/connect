@@ -9,6 +9,13 @@ updates:
       npm:
         patterns:
           - '*'
+    ignore:
+      # typescript-eslint (used by eslint-config-next) doesn't support TypeScript 7 yet.
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
+      # Keep Node's types on the Node version we run (.nvmrc and the Dockerfile).
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
   - package-ecosystem: github-actions
     directory: /
     schedule:
