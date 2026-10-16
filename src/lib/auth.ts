@@ -5,20 +5,21 @@ import { nextCookies } from 'better-auth/next-js'
 import { getDb } from '@/db'
 import * as schema from '@/db/schema'
 import { createDiscordBot } from './discord'
-import { env } from './env'
 
 function createAuth() {
-  const config = env()
-  const bot = createDiscordBot(config.discord)
+  const bot = createDiscordBot({
+    botToken: process.env.DISCORD_BOT_TOKEN,
+    guildId: process.env.DISCORD_GUILD_ID,
+  })
+  const clientIpHeader = process.env.CLIENT_IP_HEADER?.toLowerCase()
 
+  // BETTER_AUTH_URL and BETTER_AUTH_SECRET are read by Better Auth itself.
   return betterAuth({
-    baseURL: config.baseUrl,
-    secret: config.authSecret,
     database: drizzleAdapter(getDb(), { provider: 'pg', schema }),
     socialProviders: {
       discord: {
-        clientId: config.discord.clientId,
-        clientSecret: config.discord.clientSecret,
+        clientId: process.env.DISCORD_CLIENT_ID,
+        clientSecret: process.env.DISCORD_CLIENT_SECRET,
         // Only the account itself: no email, no server list.
         disableDefaultScope: true,
         scope: ['identify'],
@@ -67,7 +68,7 @@ function createAuth() {
     },
     advanced: {
       ipAddress: {
-        ipAddressHeaders: config.clientIpHeader === null ? [] : [config.clientIpHeader],
+        ipAddressHeaders: clientIpHeader ? [clientIpHeader] : [],
       },
     },
     onAPIError: { errorURL: '/' },

@@ -14,5 +14,6 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Use only the official DGG logos in `public/`. Never draw or redraw logo art.
 - Database changes: edit `src/db/schema.ts`, then `npm run db:generate -- --name <what>`. Migrations run when the server starts.
 - Business logic lives in `src/services` and `src/api` and takes its dependencies as arguments, so it is tested without Next.js. Pages and routes stay thin.
+- Settings come from `process.env`, typed in `src/environment.d.ts`. Keep it and `.env.example` in sync.
 - Never log codes or message text.
 - Before pushing: `npm run lint`, `npm run format`, `npm run check-types`, `npm test`.
