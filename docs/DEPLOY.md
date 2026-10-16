@@ -6,7 +6,7 @@ subdomain.
 
 ## 1. Database
 
-Create a Postgres database in Coolify (version 16 or newer) and copy its
+Create a Postgres database in Coolify (version 18, the version CI tests against) and copy its
 internal connection URL. The app creates and updates its own tables when it
 starts.
 
