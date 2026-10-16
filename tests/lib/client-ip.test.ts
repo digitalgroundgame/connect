@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { clientKey } from '@/lib/client-ip'
 
 describe('clientKey', () => {
-  it('is "all" when no header is configured, whatever the request sends', () => {
+  it('is null when no header is configured, whatever the request sends', () => {
     const headers = new Headers({ 'cf-connecting-ip': '203.0.113.7', 'x-forwarded-for': '1.2.3.4' })
-    expect(clientKey(headers, null)).toBe('all')
+    expect(clientKey(headers, null)).toBeNull()
   })
 
   it('reads the configured header', () => {
@@ -14,7 +14,7 @@ describe('clientKey', () => {
 
   it('ignores headers other than the configured one', () => {
     const headers = new Headers({ 'x-forwarded-for': '1.2.3.4' })
-    expect(clientKey(headers, 'CF-Connecting-IP')).toBe('unknown')
+    expect(clientKey(headers, 'CF-Connecting-IP')).toBeNull()
   })
 
   it('takes the first entry of a list and trims it', () => {
@@ -22,17 +22,17 @@ describe('clientKey', () => {
     expect(clientKey(headers, 'x-forwarded-for')).toBe('198.51.100.1')
   })
 
-  it('is "unknown" when the header is missing', () => {
-    expect(clientKey(new Headers(), 'cf-connecting-ip')).toBe('unknown')
+  it('is null when the header is missing', () => {
+    expect(clientKey(new Headers(), 'cf-connecting-ip')).toBeNull()
   })
 
-  it('is "unknown" when the header is blank', () => {
+  it('is null when the header is blank', () => {
     const headers = new Headers({ 'cf-connecting-ip': '   ' })
-    expect(clientKey(headers, 'cf-connecting-ip')).toBe('unknown')
+    expect(clientKey(headers, 'cf-connecting-ip')).toBeNull()
   })
 
-  it('is "unknown" when the first list entry is empty', () => {
+  it('is null when the first list entry is empty', () => {
     const headers = new Headers({ 'x-forwarded-for': ', 10.0.0.1' })
-    expect(clientKey(headers, 'x-forwarded-for')).toBe('unknown')
+    expect(clientKey(headers, 'x-forwarded-for')).toBeNull()
   })
 })

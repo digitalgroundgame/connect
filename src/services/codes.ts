@@ -131,3 +131,27 @@ export async function listMembers(): Promise<MemberRow[]> {
 export async function setDmChannel(userId: string, channelId: string): Promise<void> {
   await db.update(user).set({ dmChannelId: channelId }).where(eq(user.id, userId))
 }
+
+/**
+ * Makes a member an admin ('admin') or not ('user'). Refuses to remove the
+ * last admin; the admin rows are locked so two admins removing each other at
+ * once cannot both succeed. False when nothing changed.
+ */
+export async function setRole(userId: string, role: 'admin' | 'user'): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    if (role === 'user') {
+      const admins = await tx
+        .select({ id: user.id })
+        .from(user)
+        .where(eq(user.role, 'admin'))
+        .for('update')
+      if (admins.length <= 1 && admins.some((a) => a.id === userId)) return false
+    }
+    const rows = await tx
+      .update(user)
+      .set({ role })
+      .where(eq(user.id, userId))
+      .returning({ id: user.id })
+    return rows.length > 0
+  })
+}

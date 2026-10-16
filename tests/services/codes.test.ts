@@ -10,6 +10,7 @@ import {
   listMembers,
   revokeCode,
   setDmChannel,
+  setRole,
   touchCode,
 } from '@/services/codes'
 import {
@@ -307,6 +308,42 @@ describe.skipIf(!testDatabaseUrl)('services/codes', () => {
     it('is null for a member with no role set', async () => {
       const member = await insertUser({ role: null })
       expect((await listMembers()).find((m) => m.id === member.id)?.role).toBeNull()
+    })
+  })
+
+  describe('setRole', () => {
+    async function roleOf(id: string) {
+      const [row] = await db.select({ role: user.role }).from(user).where(eq(user.id, id))
+      return row?.role
+    }
+
+    it('makes a member an admin and back while another admin remains', async () => {
+      const first = await insertUser({ role: 'admin' })
+      const member = await insertUser()
+      expect(await setRole(member.id, 'admin')).toBe(true)
+      expect(await roleOf(member.id)).toBe('admin')
+      expect(await setRole(member.id, 'user')).toBe(true)
+      expect(await roleOf(member.id)).toBe('user')
+      expect(await roleOf(first.id)).toBe('admin')
+    })
+
+    it('refuses to remove the last admin', async () => {
+      const only = await insertUser({ role: 'admin' })
+      expect(await setRole(only.id, 'user')).toBe(false)
+      expect(await roleOf(only.id)).toBe('admin')
+    })
+
+    it('lets only one of two admins removing each other at once succeed', async () => {
+      const a = await insertUser({ role: 'admin' })
+      const b = await insertUser({ role: 'admin' })
+      const results = await Promise.all([setRole(a.id, 'user'), setRole(b.id, 'user')])
+      expect(results.filter(Boolean)).toHaveLength(1)
+      const roles = [await roleOf(a.id), await roleOf(b.id)]
+      expect(roles.filter((r) => r === 'admin')).toHaveLength(1)
+    })
+
+    it('returns false for an unknown member', async () => {
+      expect(await setRole('nobody', 'admin')).toBe(false)
     })
   })
 })

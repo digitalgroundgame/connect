@@ -19,6 +19,8 @@ function createAuth() {
         clientSecret: process.env.DISCORD_CLIENT_SECRET,
         // Only the account itself: no email, no server list.
         disableDefaultScope: true,
+        // Keeps names current when members rename themselves on Discord.
+        overrideUserInfoOnSignIn: true,
         scope: ['identify'],
         mapProfileToUser: (profile) => ({
           // Better Auth needs a unique email; Discord's is never asked for.
@@ -36,8 +38,8 @@ function createAuth() {
         discordUsername: { type: 'string', required: true, input: false },
         dmChannelId: { type: 'string', required: false, input: false },
       },
-      // Only members of the DGG Discord server get in, checked on every
-      // sign-in so someone who left loses access at their next sign-in.
+      // Only members of the DGG Discord server get in. Sessions outlive a
+      // member leaving, so getCode checks membership again before issuing.
       async validateUserInfo({ source }) {
         const discordId = source.oauth?.profile?.id
         if (source.oauth?.providerId !== 'discord' || typeof discordId !== 'string') {

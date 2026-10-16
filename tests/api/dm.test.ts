@@ -386,14 +386,29 @@ describe('messages: failed codes are rate limited per source', () => {
     )
   }
 
-  it('refuses even a valid code after ten failures, with Retry-After', async () => {
-    for (let i = 0; i < 10; i++) await expectError(await failFrom(), 401, 'invalid_code')
-    const res = await postMessage(message({ content: 'hello' }))
+  it('refuses even a valid code from that IP after ten failures, with Retry-After', async () => {
+    vi.stubEnv('CLIENT_IP_HEADER', 'CF-Connecting-IP')
+    const ip = randomUUID()
+    for (let i = 0; i < 10; i++) await expectError(await failFrom(ip), 401, 'invalid_code')
+    const res = await postMessage(
+      message({ content: 'hello' }, { headers: { 'CF-Connecting-IP': ip } }),
+    )
     const retryAfter = Number(res.headers.get('Retry-After'))
     expect(retryAfter).toBeGreaterThan(0)
     expect(retryAfter).toBeLessThanOrEqual(10 * 60)
     await expectError(res, 429, 'rate_limited')
     expect(mocks.findByCode).not.toHaveBeenCalled()
+  })
+
+  it('limits nobody when no IP header is configured, so one client cannot lock out all', async () => {
+    for (let i = 0; i < 12; i++) await expectError(await failFrom(), 401, 'invalid_code')
+    expect((await postMessage(message({ content: 'hello' }))).status).toBe(200)
+  })
+
+  it('limits nobody whose request lacks the configured header', async () => {
+    vi.stubEnv('CLIENT_IP_HEADER', 'CF-Connecting-IP')
+    for (let i = 0; i < 12; i++) await expectError(await failFrom(), 401, 'invalid_code')
+    expect((await postMessage(message({ content: 'hello' }))).status).toBe(200)
   })
 
   it('counts each client IP apart when a header is configured', async () => {
@@ -406,18 +421,22 @@ describe('messages: failed codes are rate limited per source', () => {
   })
 
   it('reads the header setting on each request', async () => {
-    for (let i = 0; i < 10; i++) await failFrom('203.0.113.9')
-    await expectError(await failFrom('203.0.113.9'), 429, 'rate_limited')
-    // Without the setting every client shared one key; with it this one is separate.
+    const ip = randomUUID()
+    for (let i = 0; i < 10; i++) await failFrom(ip)
+    // Unset: the header is ignored, so nothing was counted.
     vi.stubEnv('CLIENT_IP_HEADER', 'cf-connecting-ip')
-    await expectError(await failFrom(randomUUID()), 401, 'invalid_code')
+    for (let i = 0; i < 10; i++) await expectError(await failFrom(ip), 401, 'invalid_code')
+    await expectError(await failFrom(ip), 429, 'rate_limited')
   })
 
   it('does not count successful requests', async () => {
-    for (let i = 0; i < 9; i++) await failFrom()
+    vi.stubEnv('CLIENT_IP_HEADER', 'CF-Connecting-IP')
+    const ip = randomUUID()
+    for (let i = 0; i < 9; i++) await failFrom(ip)
     // The valid request passes and adds no failure, so one more failure is still a 401.
-    expect((await postMessage(message({ content: 'hello' }))).status).toBe(200)
-    await expectError(await failFrom(), 401, 'invalid_code')
+    const ok = message({ content: 'hello' }, { headers: { 'CF-Connecting-IP': ip } })
+    expect((await postMessage(ok)).status).toBe(200)
+    await expectError(await failFrom(ip), 401, 'invalid_code')
   })
 })
 

@@ -55,6 +55,28 @@ describe('takeMessage', () => {
   })
 })
 
+describe('refused messages', () => {
+  it('do not use up the hourly cap', async () => {
+    const code = key()
+    // 20 rounds of a full burst plus 5 refused retries: 60 sent, 100 refused.
+    for (let round = 0; round < 20; round++) {
+      for (let i = 0; i < 3; i++) expect(await takeMessage(code)).toEqual({ ok: true })
+      for (let i = 0; i < 5; i++) await refusal(takeMessage(code))
+      await vi.advanceTimersByTimeAsync(10_000)
+    }
+    // Only the 60 sent count, so the hourly cap is exactly reached now.
+    expect(await refusal(takeMessage(code))).toBeGreaterThan(10)
+  })
+
+  it('leave the burst untouched when the shared limit refuses', async () => {
+    const code = key()
+    for (let i = 0; i < 20; i++) await takeTest(key())
+    await refusal(takeMessage(code))
+    await vi.advanceTimersByTimeAsync(1_000)
+    for (let i = 0; i < 3; i++) expect(await takeMessage(code)).toEqual({ ok: true })
+  })
+})
+
 describe('takeTest', () => {
   it('allows five an hour per code', async () => {
     const code = key()

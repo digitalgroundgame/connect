@@ -71,14 +71,30 @@ export const messageSchema = z.object({
   id: z.string().min(1).max(64).optional(),
 })
 
-/** The message body, or the error to answer with. Refuses big bodies unread. */
+/**
+ * The body as text, or null once it passes the size cap. Read in chunks, so a
+ * body with no Content-Length (chunked) cannot be buffered whole first.
+ */
+async function readCapped(req: Request): Promise<string | null> {
+  const length = Number(req.headers.get('content-length'))
+  if (Number.isFinite(length) && length > MAX_BODY_BYTES) return null
+  if (req.body === null) return ''
+  const chunks: Uint8Array[] = []
+  let size = 0
+  for await (const chunk of req.body) {
+    size += chunk.byteLength
+    if (size > MAX_BODY_BYTES) return null
+    chunks.push(chunk)
+  }
+  return Buffer.concat(chunks).toString('utf8')
+}
+
+/** The message body, or the error to answer with. */
 export async function readMessage(
   req: Request,
 ): Promise<z.infer<typeof messageSchema> | ErrorCode> {
-  const length = Number(req.headers.get('content-length'))
-  if (Number.isFinite(length) && length > MAX_BODY_BYTES) return 'too_large'
-  const text = await req.text()
-  if (Buffer.byteLength(text) > MAX_BODY_BYTES) return 'too_large'
+  const text = await readCapped(req)
+  if (text === null) return 'too_large'
   let body: unknown
   try {
     body = JSON.parse(text)
@@ -107,12 +123,14 @@ function describe(err: unknown): string {
 /** The code's owner, or the response that refuses the request. */
 export async function authenticate(req: Request): Promise<CodeOwner | Response> {
   const source = clientKey(req.headers, process.env.CLIENT_IP_HEADER?.toLowerCase() || null)
-  const allowed = await checkSource(source)
-  if (!allowed.ok) return errorResponse('rate_limited', allowed.retryAfterSeconds)
+  if (source !== null) {
+    const allowed = await checkSource(source)
+    if (!allowed.ok) return errorResponse('rate_limited', allowed.retryAfterSeconds)
+  }
   const code = codeFromHeader(req.headers.get('authorization'))
   const owner = code === null ? null : await findByCode(code)
   if (owner === null) {
-    await recordFailure(source)
+    if (source !== null) await recordFailure(source)
     console.warn('request with an invalid code', { source })
     return errorResponse('invalid_code')
   }

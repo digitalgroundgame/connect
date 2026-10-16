@@ -1,5 +1,5 @@
 import 'server-only'
-import { RateLimiterMemory, RateLimiterRes, RateLimiterUnion } from 'rate-limiter-flexible'
+import { RateLimiterMemory, RateLimiterRes } from 'rate-limiter-flexible'
 
 /**
  * In-memory limits, so they reset when the server restarts. That is fine for
@@ -8,11 +8,9 @@ import { RateLimiterMemory, RateLimiterRes, RateLimiterUnion } from 'rate-limite
  */
 
 /** Per code: a short burst, then hourly and daily caps. */
-const messages = new RateLimiterUnion(
-  new RateLimiterMemory({ keyPrefix: 'burst', points: 3, duration: 10 }),
-  new RateLimiterMemory({ keyPrefix: 'hour', points: 60, duration: 60 * 60 }),
-  new RateLimiterMemory({ keyPrefix: 'day', points: 300, duration: 24 * 60 * 60 }),
-)
+const burst = new RateLimiterMemory({ keyPrefix: 'burst', points: 3, duration: 10 })
+const hourly = new RateLimiterMemory({ keyPrefix: 'hour', points: 60, duration: 60 * 60 })
+const daily = new RateLimiterMemory({ keyPrefix: 'day', points: 300, duration: 24 * 60 * 60 })
 /** Test messages, per code, counted apart from real ones. */
 const tests = new RateLimiterMemory({ keyPrefix: 'test', points: 5, duration: 60 * 60 })
 /** Every DM together, well under Discord's own limit for the bot. */
@@ -27,28 +25,41 @@ function refused(results: RateLimiterRes[]): Limit {
   return { ok: false, retryAfterSeconds: Math.max(1, Math.ceil(ms / 1000)) }
 }
 
-/** Rejections are RateLimiterRes (one limiter) or a record of them (a union). */
-async function take(consume: () => Promise<unknown>): Promise<Limit> {
+/**
+ * Takes one point from every limiter, or from none: a refused request must
+ * not use up the others, or retrying after a burst refusal would drain the
+ * hourly and daily caps.
+ */
+async function takeAll(checks: [RateLimiterMemory, string][]): Promise<Limit> {
+  const used = await Promise.all(checks.map(([limiter, key]) => limiter.get(key)))
+  const full = used.filter(
+    (res, i): res is RateLimiterRes => res !== null && res.consumedPoints >= checks[i]![0].points,
+  )
+  if (full.length > 0) return refused(full)
   try {
-    await consume()
+    await Promise.all(checks.map(([limiter, key]) => limiter.consume(key)))
     return { ok: true }
   } catch (err) {
+    // Another request took the last point between the check and here.
     if (err instanceof RateLimiterRes) return refused([err])
-    if (typeof err === 'object' && err !== null && !(err instanceof Error)) {
-      return refused(Object.values(err as Record<string, RateLimiterRes>))
-    }
     throw err
   }
 }
 
-export async function takeMessage(codeId: string): Promise<Limit> {
-  const limit = await take(() => messages.consume(codeId))
-  return limit.ok ? take(() => everyone.consume('all')) : limit
+export function takeMessage(codeId: string): Promise<Limit> {
+  return takeAll([
+    [burst, codeId],
+    [hourly, codeId],
+    [daily, codeId],
+    [everyone, 'all'],
+  ])
 }
 
-export async function takeTest(codeId: string): Promise<Limit> {
-  const limit = await take(() => tests.consume(codeId))
-  return limit.ok ? take(() => everyone.consume('all')) : limit
+export function takeTest(codeId: string): Promise<Limit> {
+  return takeAll([
+    [tests, codeId],
+    [everyone, 'all'],
+  ])
 }
 
 /** Whether this client may try another code. */

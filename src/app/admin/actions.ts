@@ -1,12 +1,10 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { z } from 'zod'
-import { getAuth } from '@/lib/auth'
 import { currentMember, type Member } from '@/lib/session'
-import { revokeCode } from '@/services/codes'
+import { revokeCode, setRole } from '@/services/codes'
 import { createProject, updateProject } from '@/services/projects'
 
 /**
@@ -65,6 +63,9 @@ export async function saveProject(_previous: FormState, form: FormData): Promise
   const id = form.get('id')
 
   if (typeof id === 'string' && id !== '') {
+    if (!z.uuid().safeParse(id).success) {
+      return { status: 'error', message: 'That project no longer exists.', values: fields(form) }
+    }
     const parsed = projectSchema.safeParse(fields(form))
     if (!parsed.success)
       return { status: 'error', message: parsed.error.issues[0]!.message, values: fields(form) }
@@ -98,9 +99,9 @@ export async function saveProject(_previous: FormState, form: FormData): Promise
 
 export async function revokeMemberCode(form: FormData): Promise<void> {
   const admin = await requireAdmin()
-  const codeId = form.get('codeId')
-  if (typeof codeId === 'string' && (await revokeCode(codeId))) {
-    console.info('code revoked', { admin: admin.discordId, codeId })
+  const codeId = z.uuid().safeParse(form.get('codeId'))
+  if (codeId.success && (await revokeCode(codeId.data))) {
+    console.info('code revoked', { admin: admin.discordId, codeId: codeId.data })
   }
   revalidatePath('/admin')
 }
@@ -109,13 +110,10 @@ export async function setMemberAdmin(form: FormData): Promise<void> {
   const admin = await requireAdmin()
   const userId = form.get('userId')
   const makeAdmin = form.get('admin') === 'true'
-  // Admins cannot remove themselves, so there is always at least one.
+  // Admins cannot remove themselves; setRole also refuses to remove the last one.
   if (typeof userId !== 'string' || (userId === admin.id && !makeAdmin)) return
-  // Better Auth's admin plugin checks the caller is an admin too.
-  await getAuth().api.setRole({
-    body: { userId, role: makeAdmin ? 'admin' : 'user' },
-    headers: await headers(),
-  })
-  console.info('admin role changed', { admin: admin.discordId, userId, isAdmin: makeAdmin })
+  if (await setRole(userId, makeAdmin ? 'admin' : 'user')) {
+    console.info('admin role changed', { admin: admin.discordId, userId, isAdmin: makeAdmin })
+  }
   revalidatePath('/admin')
 }

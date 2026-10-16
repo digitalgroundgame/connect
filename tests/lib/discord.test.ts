@@ -59,6 +59,8 @@ describe('the REST client', () => {
     const reject = options.rejectOnRateLimit
     expect(typeof reject).toBe('function')
     expect(await (reject as () => unknown)()).toBe(true)
+    // A retried send can deliver the same DM twice.
+    expect(options.retries).toBe(0)
   })
 })
 

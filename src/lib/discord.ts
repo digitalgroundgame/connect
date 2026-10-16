@@ -14,7 +14,8 @@ let client: REST | undefined
 function bot(): REST {
   client ??= new REST({
     timeout: 8_000,
-    retries: 1,
+    // A retried send after a timeout can deliver the same DM twice.
+    retries: 0,
     // Fail at once on a Discord rate limit, so a tool is told to retry
     // rather than left waiting on a queued request.
     rejectOnRateLimit: () => true,
