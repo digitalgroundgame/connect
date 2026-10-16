@@ -9,6 +9,7 @@ import {
   issueCode,
   listMembers,
   revokeCode,
+  setAdmin,
   setDmChannel,
   touchCode,
 } from '@/services/codes'
@@ -220,6 +221,7 @@ describe.skipIf(!testDatabaseUrl)('services/codes', () => {
         name: 'Bob',
         discordUsername: without.discordUsername,
         discordId: without.discordId,
+        isAdmin: false,
         createdAt: without.createdAt,
         codes: [],
       })
@@ -295,6 +297,30 @@ describe.skipIf(!testDatabaseUrl)('services/codes', () => {
       const code = await issueCode(db, member.id, project.id)
       await setDmChannel(db, member.id, 'channel-42')
       expect((await findByCode(db, code))?.user.dmChannelId).toBe('channel-42')
+    })
+  })
+
+  describe('setAdmin', () => {
+    it('members start as non-admins', async () => {
+      const member = await insertUser(db)
+      expect(member.isAdmin).toBe(false)
+    })
+
+    it('makes a member an admin and back, and listMembers shows it', async () => {
+      const member = await insertUser(db)
+      const other = await insertUser(db)
+      expect(await setAdmin(db, member.id, true)).toBe(true)
+      let members = await listMembers(db)
+      expect(members.find((m) => m.id === member.id)?.isAdmin).toBe(true)
+      expect(members.find((m) => m.id === other.id)?.isAdmin).toBe(false)
+
+      expect(await setAdmin(db, member.id, false)).toBe(true)
+      members = await listMembers(db)
+      expect(members.find((m) => m.id === member.id)?.isAdmin).toBe(false)
+    })
+
+    it('returns false for an unknown member', async () => {
+      expect(await setAdmin(db, 'nobody', true)).toBe(false)
     })
   })
 })

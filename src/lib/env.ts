@@ -17,8 +17,6 @@ export interface Env {
     /** Only members of this Discord server can sign in. */
     guildId: string
   }
-  /** Discord user IDs that can open the admin pages. */
-  adminDiscordIds: ReadonlySet<string>
   /**
    * The header holding the visitor's IP, set by the proxy in front of us
    * (CF-Connecting-IP behind Cloudflare). Unset means rate limits share one
@@ -48,12 +46,6 @@ export function env(): Env {
       botToken: required('DISCORD_BOT_TOKEN'),
       guildId: required('DISCORD_GUILD_ID'),
     },
-    adminDiscordIds: new Set(
-      (process.env.ADMIN_DISCORD_IDS ?? '')
-        .split(',')
-        .map((id) => id.trim())
-        .filter((id) => id !== ''),
-    ),
     clientIpHeader: process.env.CLIENT_IP_HEADER?.trim().toLowerCase() || null,
   }
   return cached

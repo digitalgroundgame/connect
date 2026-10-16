@@ -37,6 +37,8 @@ function createAuth() {
         discordId: { type: 'string', required: true, input: false, unique: true },
         discordUsername: { type: 'string', required: true, input: false },
         dmChannelId: { type: 'string', required: false, input: false },
+        // Set at /admin by another admin; the first one is set by hand (docs/DEPLOY.md).
+        isAdmin: { type: 'boolean', required: false, defaultValue: false, input: false },
       },
       // Only members of the DGG Discord server get in, checked on every
       // sign-in so someone who left loses access at their next sign-in.

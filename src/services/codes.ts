@@ -86,6 +86,7 @@ export interface MemberRow {
   name: string
   discordUsername: string
   discordId: string
+  isAdmin: boolean
   createdAt: Date
   codes: (CodeInfo & { projectName: string })[]
 }
@@ -99,6 +100,7 @@ export async function listMembers(db: Db): Promise<MemberRow[]> {
         name: user.name,
         discordUsername: user.discordUsername,
         discordId: user.discordId,
+        isAdmin: user.isAdmin,
         createdAt: user.createdAt,
       },
       code: {
@@ -128,4 +130,14 @@ export async function listMembers(db: Db): Promise<MemberRow[]> {
 
 export async function setDmChannel(db: Db, userId: string, channelId: string): Promise<void> {
   await db.update(user).set({ dmChannelId: channelId }).where(eq(user.id, userId))
+}
+
+/** Makes a member an admin or not. False when there is no such member. */
+export async function setAdmin(db: Db, userId: string, isAdmin: boolean): Promise<boolean> {
+  const rows = await db
+    .update(user)
+    .set({ isAdmin })
+    .where(eq(user.id, userId))
+    .returning({ id: user.id })
+  return rows.length > 0
 }

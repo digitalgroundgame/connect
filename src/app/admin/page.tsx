@@ -15,7 +15,7 @@ import { getDb } from '@/db'
 import { currentMember } from '@/lib/session'
 import { listMembers } from '@/services/codes'
 import { listProjects } from '@/services/projects'
-import { revokeMemberCode } from './actions'
+import { revokeMemberCode, setMemberAdmin } from './actions'
 import { ProjectForm } from './project-form'
 
 export const metadata: Metadata = { title: 'Admin' }
@@ -84,10 +84,22 @@ export default async function AdminPage() {
                     <TableRow key={code?.id ?? m.id}>
                       <TableCell>
                         {i === 0 && (
-                          <>
-                            {m.discordUsername}
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              {m.discordUsername}
+                              {m.isAdmin && <Badge variant="secondary">Admin</Badge>}
+                            </div>
                             <span className="block text-muted-foreground">{m.discordId}</span>
-                          </>
+                            {m.id !== member.id && (
+                              <form action={setMemberAdmin}>
+                                <input type="hidden" name="userId" value={m.id} />
+                                <input type="hidden" name="admin" value={String(!m.isAdmin)} />
+                                <Button type="submit" variant="link" size="xs" className="px-0">
+                                  {m.isAdmin ? 'Remove admin' : 'Make admin'}
+                                </Button>
+                              </form>
+                            )}
+                          </div>
                         )}
                       </TableCell>
                       <TableCell>{code?.projectName ?? 'No codes'}</TableCell>

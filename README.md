@@ -6,7 +6,8 @@ Discord DMs from the DGG bot.
 
 - Members of the DGG Discord server sign in with Discord and get one code per
   tool ("project"). Getting a new code turns the old one off.
-- Admins add and edit projects at `/admin`, and can turn off any member's code.
+- Admins add and edit projects at `/admin`, turn off any member's code, and
+  make other members admins.
 - Tools send `Authorization: Bearer <code>` to the API below. A project that
   is allowed to DM can have the DGG bot send the member a Discord message.
 
@@ -54,8 +55,8 @@ npm run dev                  # http://localhost:3000, migrations run on start
 ```
 
 For sign-in to work locally, add `http://localhost:3000/api/auth/callback/discord`
-as a redirect on the Discord app, and put your own Discord user ID in
-`ADMIN_DISCORD_IDS` to reach `/admin`.
+as a redirect on the Discord app. To reach `/admin`, sign in once, then make
+yourself an admin as in [docs/DEPLOY.md](docs/DEPLOY.md#5-first-admin).
 
 | Script                | Does                                             |
 | --------------------- | ------------------------------------------------ |

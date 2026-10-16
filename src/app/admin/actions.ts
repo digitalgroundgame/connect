@@ -6,7 +6,7 @@ import { getDb } from '@/db'
 import { isValidSlug } from '@/lib/codes'
 import { log } from '@/lib/log'
 import { currentMember, type Member } from '@/lib/session'
-import { revokeCode } from '@/services/codes'
+import { revokeCode, setAdmin } from '@/services/codes'
 import { createProject, updateProject, type ProjectInput } from '@/services/projects'
 
 export type FormState =
@@ -96,6 +96,18 @@ export async function revokeMemberCode(form: FormData): Promise<void> {
   const codeId = text(form, 'codeId')
   if (codeId !== '' && (await revokeCode(getDb(), codeId))) {
     log.info({ admin: admin.discordId, codeId }, 'code revoked')
+  }
+  revalidatePath('/admin')
+}
+
+export async function setMemberAdmin(form: FormData): Promise<void> {
+  const admin = await requireAdmin()
+  const userId = text(form, 'userId')
+  const makeAdmin = form.get('admin') === 'true'
+  // Admins cannot remove themselves, so there is always at least one.
+  if (userId === '' || (userId === admin.id && !makeAdmin)) return
+  if (await setAdmin(getDb(), userId, makeAdmin)) {
+    log.info({ admin: admin.discordId, userId, isAdmin: makeAdmin }, 'admin role changed')
   }
   revalidatePath('/admin')
 }

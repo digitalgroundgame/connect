@@ -1,7 +1,6 @@
 import 'server-only'
 import { headers } from 'next/headers'
 import { getAuth } from './auth'
-import { env } from './env'
 
 export interface Member {
   id: string
@@ -11,7 +10,7 @@ export interface Member {
   isAdmin: boolean
 }
 
-/** The signed-in member, or null. Admins are the Discord IDs in ADMIN_DISCORD_IDS. */
+/** The signed-in member, or null. */
 export async function currentMember(): Promise<Member | null> {
   // Read the request first: it marks the page as dynamic before any settings are needed.
   const requestHeaders = await headers()
@@ -23,6 +22,6 @@ export async function currentMember(): Promise<Member | null> {
     name,
     discordId,
     discordUsername,
-    isAdmin: env().adminDiscordIds.has(discordId),
+    isAdmin: session.user.isAdmin === true,
   }
 }

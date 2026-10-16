@@ -17,6 +17,7 @@ export const user = pgTable('user', {
   discordId: text('discord_id').notNull().unique(),
   discordUsername: text('discord_username').notNull(),
   dmChannelId: text('dm_channel_id'),
+  isAdmin: boolean('is_admin').default(false).notNull(),
 })
 
 export const session = pgTable(
