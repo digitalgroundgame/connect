@@ -64,7 +64,7 @@ admins from the member list at `/admin`. The first one is set by hand, once:
    profile, **Copy User ID**):
 
    ```sql
-   UPDATE "user" SET is_admin = true WHERE discord_id = '<your Discord user ID>';
+   UPDATE "user" SET role = 'admin' WHERE discord_id = '<your Discord user ID>';
    ```
 
    It should print `UPDATE 1`. `UPDATE 0` means that account has not signed in yet.

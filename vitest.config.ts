@@ -11,6 +11,8 @@ export default defineConfig({
   },
   test: {
     include: ['tests/**/*.test.ts'],
+    // Points @/db at the test database before any test file imports it.
+    setupFiles: ['tests/setup.ts'],
     // The database tests share one schema, so run files one at a time.
     fileParallelism: false,
   },

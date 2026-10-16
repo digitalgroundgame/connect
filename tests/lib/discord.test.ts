@@ -1,220 +1,152 @@
-import { describe, expect, it } from 'vitest'
-import {
-  CANNOT_DM_USER,
-  createDiscordBot,
-  DiscordError,
-  UNKNOWN_CHANNEL,
-  UNKNOWN_MEMBER,
-} from '@/lib/discord'
+import { DiscordAPIError, RateLimitError, type RESTOptions } from '@discordjs/rest'
+import { RESTJSONErrorCodes } from 'discord-api-types/v10'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import * as discord from '@/lib/discord'
 
-interface Call {
-  url: string
-  init: RequestInit
-}
+/** Stands in for @discordjs/rest's REST client, recording how it is built and called. */
+const rest = vi.hoisted(() => ({
+  options: [] as unknown[],
+  token: undefined as string | undefined,
+  get: vi.fn<(route: string, options?: unknown) => Promise<unknown>>(),
+  post: vi.fn<(route: string, options?: unknown) => Promise<unknown>>(),
+}))
 
-/** A fetch that answers every call with the given responses in order and records the calls. */
-function fakeFetch(...responses: Response[]) {
-  const calls: Call[] = []
-  const impl = async (input: RequestInfo | URL, init?: RequestInit) => {
-    calls.push({ url: String(input), init: init ?? {} })
-    const res = responses.shift()
-    if (res === undefined) throw new Error('unexpected fetch')
-    return res
+vi.mock('@discordjs/rest', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@discordjs/rest')>()
+  class FakeREST {
+    constructor(options?: unknown) {
+      rest.options.push(options)
+    }
+    setToken(token: string) {
+      rest.token = token
+      return this
+    }
+    get = rest.get
+    post = rest.post
   }
-  return { calls, fetch: impl as typeof fetch }
-}
+  return { ...actual, REST: FakeREST }
+})
 
-function json(status: number, body: unknown, headers: Record<string, string> = {}): Response {
-  return Response.json(body, { status, headers })
-}
+// Both are read when the client is first used, not when the module loads.
+vi.stubEnv('DISCORD_BOT_TOKEN', 'token-123')
+vi.stubEnv('DISCORD_GUILD_ID', 'guild-1')
 
-function botWith(...responses: Response[]) {
-  const fake = fakeFetch(...responses)
-  const bot = createDiscordBot({ botToken: 'token-123', guildId: 'guild-1' }, fake.fetch)
-  return { bot, calls: fake.calls }
-}
+const { isGuildMember, openDm, sendMessage } = discord
 
-function headersOf(call: Call): Record<string, string> {
-  return call.init.headers as Record<string, string>
-}
-
-function bodyOf(call: Call): unknown {
-  return JSON.parse(call.init.body as string)
-}
-
-async function caught(promise: Promise<unknown>): Promise<DiscordError> {
-  const err = await promise.then(
-    () => null,
-    (e: unknown) => e,
+function apiError(code: number, status = 404): DiscordAPIError {
+  return new DiscordAPIError(
+    { code, message: 'error' },
+    code,
+    status,
+    'GET',
+    'https://discord.com/api/v10/x',
+    {},
   )
-  expect(err).toBeInstanceOf(DiscordError)
-  return err as DiscordError
 }
 
-describe('requests', () => {
-  it('send the bot token and a DiscordBot user agent', async () => {
-    const { bot, calls } = botWith(json(200, {}))
-    await bot.isGuildMember('user-1')
-    const headers = headersOf(calls[0]!)
-    expect(headers.Authorization).toBe('Bot token-123')
-    expect(headers['User-Agent']).toMatch(/^DiscordBot \(/)
-  })
+beforeEach(() => {
+  rest.get.mockReset().mockResolvedValue({})
+  rest.post.mockReset().mockResolvedValue({ id: 'channel-9' })
+})
 
-  it('carry a signal, so a hung call times out', async () => {
-    const { bot, calls } = botWith(json(200, {}))
-    await bot.isGuildMember('user-1')
-    expect(calls[0]!.init.signal).toBeInstanceOf(AbortSignal)
-  })
-
-  it('send no body or content type on a GET', async () => {
-    const { bot, calls } = botWith(json(200, {}))
-    await bot.isGuildMember('user-1')
-    expect(calls[0]!.init.body).toBeUndefined()
-    expect(headersOf(calls[0]!)['Content-Type']).toBeUndefined()
+describe('the REST client', () => {
+  it('is built once, with the bot token, and rejects on rate limits', async () => {
+    await isGuildMember('user-1')
+    await openDm('user-1')
+    expect(rest.options).toHaveLength(1)
+    expect(rest.token).toBe('token-123')
+    const options = rest.options[0] as Partial<RESTOptions>
+    const reject = options.rejectOnRateLimit
+    expect(typeof reject).toBe('function')
+    expect(await (reject as () => unknown)()).toBe(true)
   })
 })
 
 describe('isGuildMember', () => {
   it('asks for the member in the configured guild', async () => {
-    const { bot, calls } = botWith(json(200, { user: { id: 'user-1' } }))
-    await bot.isGuildMember('user-1')
-    expect(calls[0]!.url).toBe('https://discord.com/api/v10/guilds/guild-1/members/user-1')
-    expect(calls[0]!.init.method).toBe('GET')
+    await isGuildMember('user-1')
+    expect(rest.get).toHaveBeenCalledWith('/guilds/guild-1/members/user-1')
   })
 
   it('is true when Discord returns the member', async () => {
-    const { bot } = botWith(json(200, { user: { id: 'user-1' } }))
-    expect(await bot.isGuildMember('user-1')).toBe(true)
+    rest.get.mockResolvedValue({ user: { id: 'user-1' } })
+    expect(await isGuildMember('user-1')).toBe(true)
   })
 
   it('is false on Unknown Member (10007)', async () => {
-    const { bot } = botWith(json(404, { code: UNKNOWN_MEMBER, message: 'Unknown Member' }))
-    expect(await bot.isGuildMember('user-1')).toBe(false)
+    rest.get.mockRejectedValue(apiError(RESTJSONErrorCodes.UnknownMember))
+    expect(await isGuildMember('user-1')).toBe(false)
   })
 
-  it('throws on any other error', async () => {
-    const { bot } = botWith(json(404, { code: 10004, message: 'Unknown Guild' }))
-    const err = await caught(bot.isGuildMember('user-1'))
-    expect(err.status).toBe(404)
-    expect(err.code).toBe(10004)
+  it('rethrows any other Discord error', async () => {
+    const err = apiError(RESTJSONErrorCodes.UnknownGuild)
+    rest.get.mockRejectedValue(err)
+    await expect(isGuildMember('user-1')).rejects.toBe(err)
   })
 
-  it('throws on a server error with no JSON body', async () => {
-    const { bot } = botWith(new Response('Bad Gateway', { status: 502 }))
-    const err = await caught(bot.isGuildMember('user-1'))
-    expect(err.status).toBe(502)
-    expect(err.code).toBeNull()
+  it('rethrows an error that is not from Discord', async () => {
+    const err = new TypeError('fetch failed')
+    rest.get.mockRejectedValue(err)
+    await expect(isGuildMember('user-1')).rejects.toBe(err)
   })
 })
 
 describe('openDm', () => {
   it('posts the recipient and returns the channel id', async () => {
-    const { bot, calls } = botWith(json(200, { id: 'channel-9' }))
-    expect(await bot.openDm('user-1')).toBe('channel-9')
-    expect(calls[0]!.url).toBe('https://discord.com/api/v10/users/@me/channels')
-    expect(calls[0]!.init.method).toBe('POST')
-    expect(headersOf(calls[0]!)['Content-Type']).toBe('application/json')
-    expect(bodyOf(calls[0]!)).toEqual({ recipient_id: 'user-1' })
+    expect(await openDm('user-1')).toBe('channel-9')
+    expect(rest.post).toHaveBeenCalledWith('/users/@me/channels', {
+      body: { recipient_id: 'user-1' },
+      signal: undefined,
+    })
   })
 
-  it('aborts when the given signal does', async () => {
-    const { bot, calls } = botWith(json(200, { id: 'channel-9' }))
-    const controller = new AbortController()
-    await bot.openDm('user-1', controller.signal)
-    const signal = calls[0]!.init.signal as AbortSignal
-    expect(signal.aborted).toBe(false)
-    controller.abort()
-    expect(signal.aborted).toBe(true)
+  it('passes the signal on', async () => {
+    const signal = new AbortController().signal
+    await openDm('user-1', signal)
+    expect(rest.post.mock.calls[0]![1]).toMatchObject({ signal })
   })
 })
 
 describe('sendMessage', () => {
   it('posts the content to the channel and allows no mentions', async () => {
-    const { bot, calls } = botWith(json(200, { id: 'message-1' }))
-    await bot.sendMessage('channel-9', 'hello @everyone')
-    expect(calls[0]!.url).toBe('https://discord.com/api/v10/channels/channel-9/messages')
-    expect(calls[0]!.init.method).toBe('POST')
-    expect(bodyOf(calls[0]!)).toEqual({
-      content: 'hello @everyone',
-      allowed_mentions: { parse: [] },
+    await sendMessage('channel-9', 'hello @everyone')
+    expect(rest.post).toHaveBeenCalledWith('/channels/channel-9/messages', {
+      body: { content: 'hello @everyone', allowed_mentions: { parse: [] } },
+      signal: undefined,
     })
   })
 
   it('sends the nonce with enforce_nonce when given one', async () => {
-    const { bot, calls } = botWith(json(200, { id: 'message-1' }))
-    await bot.sendMessage('channel-9', 'hello', { nonce: 'abc123' })
-    expect(bodyOf(calls[0]!)).toEqual({
-      content: 'hello',
-      allowed_mentions: { parse: [] },
-      nonce: 'abc123',
-      enforce_nonce: true,
+    const signal = new AbortController().signal
+    await sendMessage('channel-9', 'hello', { nonce: 'abc123', signal })
+    expect(rest.post).toHaveBeenCalledWith('/channels/channel-9/messages', {
+      body: {
+        content: 'hello',
+        allowed_mentions: { parse: [] },
+        nonce: 'abc123',
+        enforce_nonce: true,
+      },
+      signal,
     })
   })
 
-  it('throws Cannot DM User (50007) as a DiscordError', async () => {
-    const { bot } = botWith(
-      json(403, { code: CANNOT_DM_USER, message: 'Cannot send messages to this user' }),
-    )
-    const err = await caught(bot.sendMessage('channel-9', 'hello'))
-    expect(err.status).toBe(403)
-    expect(err.code).toBe(CANNOT_DM_USER)
-    expect(err.message).toBe('discord 403: Cannot send messages to this user')
-    expect(err.name).toBe('DiscordError')
+  it('sends no nonce fields for an undefined nonce', async () => {
+    await sendMessage('channel-9', 'hello', { nonce: undefined })
+    const body = (rest.post.mock.calls[0]![1] as { body: object }).body
+    expect(body).not.toHaveProperty('nonce')
+    expect(body).not.toHaveProperty('enforce_nonce')
   })
 
-  it('throws Unknown Channel (10003) as a DiscordError', async () => {
-    const { bot } = botWith(json(404, { code: UNKNOWN_CHANNEL, message: 'Unknown Channel' }))
-    const err = await caught(bot.sendMessage('channel-9', 'hello'))
-    expect(err.code).toBe(UNKNOWN_CHANNEL)
+  it('lets Discord errors through', async () => {
+    const err = apiError(RESTJSONErrorCodes.CannotSendMessagesToThisUser, 403)
+    rest.post.mockRejectedValue(err)
+    await expect(sendMessage('channel-9', 'hello')).rejects.toBe(err)
   })
 })
 
-describe('DiscordError mapping', () => {
-  it('reads retry_after from a 429 body', async () => {
-    const { bot } = botWith(
-      json(429, { message: 'You are being rate limited.', retry_after: 1.5, global: false }),
-    )
-    const err = await caught(bot.sendMessage('channel-9', 'hello'))
-    expect(err.status).toBe(429)
-    expect(err.retryAfter).toBe(1.5)
-    expect(err.code).toBeNull()
-  })
-
-  it('prefers retry_after in the body over the header', async () => {
-    const { bot } = botWith(json(429, { retry_after: 2.25 }, { 'Retry-After': '9' }))
-    const err = await caught(bot.sendMessage('channel-9', 'hello'))
-    expect(err.retryAfter).toBe(2.25)
-  })
-
-  it('falls back to the Retry-After header', async () => {
-    const { bot } = botWith(
-      new Response('slow down', { status: 429, headers: { 'Retry-After': '7' } }),
-    )
-    const err = await caught(bot.sendMessage('channel-9', 'hello'))
-    expect(err.retryAfter).toBe(7)
-    expect(err.message).toBe('discord 429')
-  })
-
-  it('ignores a Retry-After header that is not a positive number', async () => {
-    const { bot } = botWith(
-      new Response('slow down', { status: 429, headers: { 'Retry-After': 'soon' } }),
-    )
-    const err = await caught(bot.sendMessage('channel-9', 'hello'))
-    expect(err.retryAfter).toBeNull()
-  })
-
-  it('leaves retryAfter null when nothing gives one', async () => {
-    const { bot } = botWith(json(500, { message: 'oops' }))
-    const err = await caught(bot.sendMessage('channel-9', 'hello'))
-    expect(err.retryAfter).toBeNull()
-    expect(err.message).toBe('discord 500: oops')
-  })
-
-  it('ignores fields of the wrong type', async () => {
-    const { bot } = botWith(json(400, { code: '50007', message: 42, retry_after: '3' }))
-    const err = await caught(bot.sendMessage('channel-9', 'hello'))
-    expect(err.code).toBeNull()
-    expect(err.retryAfter).toBeNull()
-    expect(err.message).toBe('discord 400')
+describe('re-exports', () => {
+  it('are the classes from @discordjs/rest', () => {
+    expect(discord.DiscordAPIError).toBe(DiscordAPIError)
+    expect(discord.RateLimitError).toBe(RateLimitError)
   })
 })

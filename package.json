@@ -15,16 +15,20 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
+    "@discordjs/rest": "^2.6.3",
     "better-auth": "^1.7.10",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "discord-api-types": "^0.38.56",
     "drizzle-orm": "^0.45.4",
     "next": "16.4.2",
     "pg": "^8.23.1",
+    "rate-limiter-flexible": "^11.2.2",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "server-only": "^0.0.1",
-    "tailwind-merge": "^3.7.0"
+    "tailwind-merge": "^3.7.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",

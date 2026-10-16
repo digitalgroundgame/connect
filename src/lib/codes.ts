@@ -38,8 +38,3 @@ export function messageNonce(codeId: string, messageId: string, content: string)
     .digest('base64url')
     .slice(0, 25)
 }
-
-/** Project slugs: short, lowercase, URL-safe, and stable once tools use them. */
-export function isValidSlug(value: string): boolean {
-  return /^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$/.test(value)
-}

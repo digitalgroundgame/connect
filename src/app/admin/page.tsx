@@ -11,7 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { getDb } from '@/db'
 import { currentMember } from '@/lib/session'
 import { listMembers } from '@/services/codes'
 import { listProjects } from '@/services/projects'
@@ -28,8 +27,7 @@ export default async function AdminPage() {
   const member = await currentMember()
   if (member === null || !member.isAdmin) notFound()
 
-  const db = getDb()
-  const [projects, members] = await Promise.all([listProjects(db), listMembers(db)])
+  const [projects, members] = await Promise.all([listProjects(), listMembers()])
 
   return (
     <div className="space-y-8">
@@ -87,15 +85,19 @@ export default async function AdminPage() {
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
                               {m.discordUsername}
-                              {m.isAdmin && <Badge variant="secondary">Admin</Badge>}
+                              {m.role === 'admin' && <Badge variant="secondary">Admin</Badge>}
                             </div>
                             <span className="block text-muted-foreground">{m.discordId}</span>
                             {m.id !== member.id && (
                               <form action={setMemberAdmin}>
                                 <input type="hidden" name="userId" value={m.id} />
-                                <input type="hidden" name="admin" value={String(!m.isAdmin)} />
+                                <input
+                                  type="hidden"
+                                  name="admin"
+                                  value={String(!(m.role === 'admin'))}
+                                />
                                 <Button type="submit" variant="link" size="xs" className="px-0">
-                                  {m.isAdmin ? 'Remove admin' : 'Make admin'}
+                                  {m.role === 'admin' ? 'Remove admin' : 'Make admin'}
                                 </Button>
                               </form>
                             )}

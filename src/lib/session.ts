@@ -22,6 +22,6 @@ export async function currentMember(): Promise<Member | null> {
     name,
     discordId,
     discordUsername,
-    isAdmin: session.user.isAdmin === true,
+    isAdmin: session.user.role === 'admin',
   }
 }

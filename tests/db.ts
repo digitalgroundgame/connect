@@ -1,33 +1,36 @@
 import path from 'node:path'
 import { sql } from 'drizzle-orm'
-import { drizzle } from 'drizzle-orm/node-postgres'
 import { migrate } from 'drizzle-orm/node-postgres/migrator'
-import { Pool } from 'pg'
-import type { Db } from '@/db'
+import { db } from '@/db'
 import * as schema from '@/db/schema'
 import type { Project, ProjectInput } from '@/services/projects'
 import { createProject } from '@/services/projects'
 
 /**
  * A real database for the service tests, from TEST_DATABASE_URL. Tests that
- * use it skip when the variable is unset. Built here rather than with getDb,
- * which reads the app's whole environment.
+ * use it skip when the variable is unset. tests/setup.ts copies it into
+ * DATABASE_URL, so the app's own `db` talks to the test database.
  */
 export const testDatabaseUrl = process.env.TEST_DATABASE_URL
 
-export interface TestDb {
-  db: Db
-  close(): Promise<void>
-}
-
-export async function openTestDb(): Promise<TestDb> {
-  const pool = new Pool({ connectionString: testDatabaseUrl, max: 2 })
-  const db = drizzle(pool, { schema })
+/**
+ * Rebuilds the schema from the migrations. Both schemas are dropped first, so
+ * a journal left by older migrations cannot stop the current ones running.
+ */
+export async function resetTestDb(): Promise<void> {
+  await db.execute(sql`DROP SCHEMA IF EXISTS "drizzle" CASCADE`)
+  await db.execute(sql`DROP SCHEMA IF EXISTS "public" CASCADE`)
+  await db.execute(sql`CREATE SCHEMA "public"`)
   await migrate(db, { migrationsFolder: path.resolve(import.meta.dirname, '../drizzle') })
-  return { db, close: () => pool.end() }
 }
 
-export async function truncateAll(db: Db): Promise<void> {
+/** Closes the app's pool, and forgets it so a later import would build a new one. */
+export async function closeTestDb(): Promise<void> {
+  await db.$client.end()
+  delete (globalThis as { connectPool?: unknown }).connectPool
+}
+
+export async function truncateAll(): Promise<void> {
   await db.execute(
     sql`TRUNCATE TABLE "access_codes", "projects", "session", "account", "verification", "user" CASCADE`,
   )
@@ -37,7 +40,6 @@ let users = 0
 
 /** Inserts a member as Better Auth would after a Discord sign-in. */
 export async function insertUser(
-  db: Db,
   overrides: Partial<typeof schema.user.$inferInsert> = {},
 ): Promise<typeof schema.user.$inferSelect> {
   users++
@@ -47,6 +49,7 @@ export async function insertUser(
       id: `user-${users}`,
       name: `Member ${users}`,
       email: `member${users}@example.test`,
+      role: 'user',
       discordId: `10000000000000${users}`,
       discordUsername: `member${users}`,
       ...overrides,
@@ -57,12 +60,9 @@ export async function insertUser(
 
 let projects = 0
 
-export async function insertProject(
-  db: Db,
-  overrides: Partial<ProjectInput> = {},
-): Promise<Project> {
+export async function insertProject(overrides: Partial<ProjectInput> = {}): Promise<Project> {
   projects++
-  return createProject(db, {
+  return createProject({
     slug: `tool-${projects}`,
     name: `Tool ${projects}`,
     description: '',

@@ -2,20 +2,17 @@ import 'server-only'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { nextCookies } from 'better-auth/next-js'
-import { getDb } from '@/db'
+import { admin } from 'better-auth/plugins'
+import { db } from '@/db'
 import * as schema from '@/db/schema'
-import { createDiscordBot } from './discord'
+import { isGuildMember } from './discord'
 
 function createAuth() {
-  const bot = createDiscordBot({
-    botToken: process.env.DISCORD_BOT_TOKEN,
-    guildId: process.env.DISCORD_GUILD_ID,
-  })
   const clientIpHeader = process.env.CLIENT_IP_HEADER?.toLowerCase()
 
   // BETTER_AUTH_URL and BETTER_AUTH_SECRET are read by Better Auth itself.
   return betterAuth({
-    database: drizzleAdapter(getDb(), { provider: 'pg', schema }),
+    database: drizzleAdapter(db, { provider: 'pg', schema }),
     socialProviders: {
       discord: {
         clientId: process.env.DISCORD_CLIENT_ID,
@@ -38,8 +35,6 @@ function createAuth() {
         discordId: { type: 'string', required: true, input: false, unique: true },
         discordUsername: { type: 'string', required: true, input: false },
         dmChannelId: { type: 'string', required: false, input: false },
-        // Set at /admin by another admin; the first one is set by hand (docs/DEPLOY.md).
-        isAdmin: { type: 'boolean', required: false, defaultValue: false, input: false },
       },
       // Only members of the DGG Discord server get in, checked on every
       // sign-in so someone who left loses access at their next sign-in.
@@ -50,7 +45,7 @@ function createAuth() {
         }
         let member: boolean
         try {
-          member = await bot.isGuildMember(discordId)
+          member = await isGuildMember(discordId)
         } catch {
           return { error: 'discord_unavailable' }
         }
@@ -72,7 +67,9 @@ function createAuth() {
       },
     },
     onAPIError: { errorURL: '/' },
-    plugins: [nextCookies()],
+    // Admins have role 'admin'. Other admins grant it at /admin; the first one
+    // is set by hand (docs/DEPLOY.md). nextCookies must stay last.
+    plugins: [admin(), nextCookies()],
   })
 }
 

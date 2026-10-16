@@ -9,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { getDb } from '@/db'
 import { currentMember } from '@/lib/session'
 import { codesForUser, type CodeInfo } from '@/services/codes'
 import { listEnabledProjects } from '@/services/projects'
@@ -67,11 +66,7 @@ export default async function Home({ searchParams }: PageProps<'/'>) {
     )
   }
 
-  const db = getDb()
-  const [projects, codes] = await Promise.all([
-    listEnabledProjects(db),
-    codesForUser(db, member.id),
-  ])
+  const [projects, codes] = await Promise.all([listEnabledProjects(), codesForUser(member.id)])
 
   return (
     <div className="space-y-6">

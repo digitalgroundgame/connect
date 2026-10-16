@@ -1,5 +1,5 @@
 import { and, asc, eq, isNull } from 'drizzle-orm'
-import type { Db } from '@/db'
+import { db } from '@/db'
 import { accessCodes, projects, user } from '@/db/schema'
 import { hashCode, newCode } from '@/lib/codes'
 import type { Project } from './projects'
@@ -13,7 +13,7 @@ export type CodeInfo = Pick<
  * Gives the member a new code for the project, replacing any earlier one.
  * Returns the code itself, which is never stored and so can be shown once.
  */
-export async function issueCode(db: Db, userId: string, projectId: string): Promise<string> {
+export async function issueCode(userId: string, projectId: string): Promise<string> {
   const code = newCode()
   const codeHash = hashCode(code)
   await db
@@ -27,7 +27,7 @@ export async function issueCode(db: Db, userId: string, projectId: string): Prom
 }
 
 /** Each of the member's codes, by project id. */
-export async function codesForUser(db: Db, userId: string): Promise<Map<string, CodeInfo>> {
+export async function codesForUser(userId: string): Promise<Map<string, CodeInfo>> {
   const rows = await db
     .select({
       projectId: accessCodes.projectId,
@@ -48,7 +48,7 @@ export interface CodeOwner {
 }
 
 /** Who a live code belongs to, or null for an unknown or revoked code. */
-export async function findByCode(db: Db, code: string): Promise<CodeOwner | null> {
+export async function findByCode(code: string): Promise<CodeOwner | null> {
   const [row] = await db
     .select({
       codeId: accessCodes.id,
@@ -67,12 +67,12 @@ export async function findByCode(db: Db, code: string): Promise<CodeOwner | null
   return row ?? null
 }
 
-export async function touchCode(db: Db, codeId: string): Promise<void> {
+export async function touchCode(codeId: string): Promise<void> {
   await db.update(accessCodes).set({ lastUsedAt: new Date() }).where(eq(accessCodes.id, codeId))
 }
 
 /** Turns a code off; the member can get a new one. False when there was none to revoke. */
-export async function revokeCode(db: Db, codeId: string): Promise<boolean> {
+export async function revokeCode(codeId: string): Promise<boolean> {
   const rows = await db
     .update(accessCodes)
     .set({ revokedAt: new Date() })
@@ -86,13 +86,13 @@ export interface MemberRow {
   name: string
   discordUsername: string
   discordId: string
-  isAdmin: boolean
+  role: string | null
   createdAt: Date
   codes: (CodeInfo & { projectName: string })[]
 }
 
 /** Every member, with their codes, for the admin page. */
-export async function listMembers(db: Db): Promise<MemberRow[]> {
+export async function listMembers(): Promise<MemberRow[]> {
   const rows = await db
     .select({
       member: {
@@ -100,7 +100,7 @@ export async function listMembers(db: Db): Promise<MemberRow[]> {
         name: user.name,
         discordUsername: user.discordUsername,
         discordId: user.discordId,
-        isAdmin: user.isAdmin,
+        role: user.role,
         createdAt: user.createdAt,
       },
       code: {
@@ -128,16 +128,6 @@ export async function listMembers(db: Db): Promise<MemberRow[]> {
   return [...members.values()]
 }
 
-export async function setDmChannel(db: Db, userId: string, channelId: string): Promise<void> {
+export async function setDmChannel(userId: string, channelId: string): Promise<void> {
   await db.update(user).set({ dmChannelId: channelId }).where(eq(user.id, userId))
-}
-
-/** Makes a member an admin or not. False when there is no such member. */
-export async function setAdmin(db: Db, userId: string, isAdmin: boolean): Promise<boolean> {
-  const rows = await db
-    .update(user)
-    .set({ isAdmin })
-    .where(eq(user.id, userId))
-    .returning({ id: user.id })
-  return rows.length > 0
 }

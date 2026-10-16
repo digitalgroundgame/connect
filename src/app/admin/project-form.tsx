@@ -16,6 +16,10 @@ export function ProjectForm({ project }: { project?: Project }) {
     status: 'idle',
   })
   const prefix = project?.id ?? 'new'
+  // What the admin last submitted, if it was refused; otherwise the saved project.
+  const values = state.status === 'error' ? state.values : undefined
+  const checked = (field: 'canDm' | 'enabled', saved: boolean) =>
+    values === undefined ? saved : values[field] === 'on'
 
   return (
     <form action={action}>
@@ -26,7 +30,7 @@ export function ProjectForm({ project }: { project?: Project }) {
           <Input
             id={`${prefix}-slug`}
             name="slug"
-            defaultValue={project?.slug}
+            defaultValue={values?.slug ?? project?.slug}
             disabled={project !== undefined}
             required={project === undefined}
             placeholder="my-tool"
@@ -35,14 +39,19 @@ export function ProjectForm({ project }: { project?: Project }) {
         </Field>
         <Field>
           <FieldLabel htmlFor={`${prefix}-name`}>Name</FieldLabel>
-          <Input id={`${prefix}-name`} name="name" defaultValue={project?.name} required />
+          <Input
+            id={`${prefix}-name`}
+            name="name"
+            defaultValue={values?.name ?? project?.name}
+            required
+          />
         </Field>
         <Field>
           <FieldLabel htmlFor={`${prefix}-description`}>Description</FieldLabel>
           <Textarea
             id={`${prefix}-description`}
             name="description"
-            defaultValue={project?.description}
+            defaultValue={values?.description ?? project?.description}
           />
         </Field>
         <Field>
@@ -51,19 +60,23 @@ export function ProjectForm({ project }: { project?: Project }) {
             id={`${prefix}-homepage`}
             name="homepageUrl"
             type="url"
-            defaultValue={project?.homepageUrl ?? ''}
+            defaultValue={values?.homepageUrl ?? project?.homepageUrl ?? ''}
             placeholder="https://"
           />
         </Field>
         <Field orientation="horizontal">
-          <Switch id={`${prefix}-canDm`} name="canDm" defaultChecked={project?.canDm ?? false} />
+          <Switch
+            id={`${prefix}-canDm`}
+            name="canDm"
+            defaultChecked={checked('canDm', project?.canDm ?? false)}
+          />
           <FieldLabel htmlFor={`${prefix}-canDm`}>Can send Discord DMs to members</FieldLabel>
         </Field>
         <Field orientation="horizontal">
           <Switch
             id={`${prefix}-enabled`}
             name="enabled"
-            defaultChecked={project?.enabled ?? true}
+            defaultChecked={checked('enabled', project?.enabled ?? true)}
           />
           <FieldLabel htmlFor={`${prefix}-enabled`}>Enabled</FieldLabel>
         </Field>

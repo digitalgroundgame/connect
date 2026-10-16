@@ -1,18 +1,11 @@
 import 'server-only'
-import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres'
+import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
 import * as schema from './schema'
 
-export type Db = NodePgDatabase<typeof schema>
+// Kept on globalThis so dev-mode reloads reuse the pool instead of leaking one
+// per edit. The pool connects on first query, so importing this needs no database.
+const globals = globalThis as unknown as { connectPool?: Pool }
+globals.connectPool ??= new Pool({ connectionString: process.env.DATABASE_URL, max: 10 })
 
-// One pool per process. Kept on globalThis so dev-mode reloads reuse it
-// rather than leaking a pool per edit.
-const globals = globalThis as unknown as { connectDb?: { pool: Pool; db: Db } }
-
-export function getDb(): Db {
-  globals.connectDb ??= (() => {
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 10 })
-    return { pool, db: drizzle(pool, { schema }) }
-  })()
-  return globals.connectDb.db
-}
+export const db = drizzle({ client: globals.connectPool, schema })

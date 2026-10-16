@@ -1,12 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  codeFromHeader,
-  hashCode,
-  isValidSlug,
-  looksLikeCode,
-  messageNonce,
-  newCode,
-} from '@/lib/codes'
+import { codeFromHeader, hashCode, looksLikeCode, messageNonce, newCode } from '@/lib/codes'
 
 describe('newCode', () => {
   it('is dgc_ followed by 43 base64url characters', () => {
@@ -135,45 +128,5 @@ describe('messageNonce', () => {
 
   it('keeps fields apart, so shifting text between them changes the nonce', () => {
     expect(messageNonce('ab', 'c', 'd')).not.toBe(messageNonce('a', 'bc', 'd'))
-  })
-})
-
-describe('isValidSlug', () => {
-  it('accepts lowercase letters, digits and inner hyphens', () => {
-    expect(isValidSlug('hindsight')).toBe(true)
-    expect(isValidSlug('tool-2')).toBe(true)
-    expect(isValidSlug('a-b-c')).toBe(true)
-  })
-
-  it('accepts a single character', () => {
-    expect(isValidSlug('a')).toBe(true)
-    expect(isValidSlug('7')).toBe(true)
-  })
-
-  it('accepts up to 32 characters and no more', () => {
-    expect(isValidSlug('a'.repeat(32))).toBe(true)
-    expect(isValidSlug('a'.repeat(33))).toBe(false)
-  })
-
-  it('rejects the empty string', () => {
-    expect(isValidSlug('')).toBe(false)
-  })
-
-  it('rejects a leading or trailing hyphen', () => {
-    expect(isValidSlug('-tool')).toBe(false)
-    expect(isValidSlug('tool-')).toBe(false)
-    expect(isValidSlug('-')).toBe(false)
-  })
-
-  it('rejects uppercase, spaces, underscores and other symbols', () => {
-    expect(isValidSlug('Tool')).toBe(false)
-    expect(isValidSlug('my tool')).toBe(false)
-    expect(isValidSlug('my_tool')).toBe(false)
-    expect(isValidSlug('tool.io')).toBe(false)
-    expect(isValidSlug('tool/x')).toBe(false)
-  })
-
-  it('rejects a trailing newline', () => {
-    expect(isValidSlug('tool\n')).toBe(false)
   })
 })
