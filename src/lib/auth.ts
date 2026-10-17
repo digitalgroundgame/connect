@@ -33,9 +33,12 @@ function createAuth() {
       },
     },
     user: {
+      // Better Auth only copies fields from mapProfileToUser that allow input,
+      // so the Discord fields do. Members can't set them: /update-user is
+      // disabled below, and there is no email sign-up.
       additionalFields: {
-        discordId: { type: 'string', required: true, input: false, unique: true },
-        discordUsername: { type: 'string', required: true, input: false },
+        discordId: { type: 'string', required: true, input: true, unique: true },
+        discordUsername: { type: 'string', required: true, input: true },
         dmChannelId: { type: 'string', required: false, input: false },
       },
       // Only members of the DGG Discord server get in. Sessions outlive a
@@ -68,6 +71,8 @@ function createAuth() {
         ipAddressHeaders: clientIpHeader ? [clientIpHeader] : [],
       },
     },
+    // Members never edit their own profile; it comes from Discord.
+    disabledPaths: ['/update-user'],
     onAPIError: { errorURL: '/' },
     // Admins have role 'admin'. Other admins grant it at /admin; the first one
     // is set by hand (docs/DEPLOY.md). nextCookies must stay last.
