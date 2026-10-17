@@ -61,7 +61,7 @@ export default async function Home({ searchParams }: PageProps<'/'>) {
             <Button
               type="submit"
               size="lg"
-              className="h-11 gap-2.5 bg-discord px-5 text-base text-white hover:bg-discord-hover"
+              className="h-11 gap-2.5 bg-discord px-5 text-base text-white hover:bg-discord-hover focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-discord focus-visible:ring-offset-2 focus-visible:ring-offset-card"
             >
               <DiscordLogo className="size-6" />
               Sign in with Discord

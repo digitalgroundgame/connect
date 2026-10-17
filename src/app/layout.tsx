@@ -16,10 +16,11 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
       <body className="min-h-screen font-sans antialiased">
         <header className="bg-brand text-brand-foreground">
           <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
+            {/* data-slot keeps the global link color and underline off the header bar. */}
             <Link
               href="/"
               data-slot="brand"
-              className="flex items-center gap-3 font-heading text-lg font-bold"
+              className="flex items-center gap-3 rounded-lg font-heading text-lg font-bold focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
             >
               <Image
                 src="/dgg-logo.png"
