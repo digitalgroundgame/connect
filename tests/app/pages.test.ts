@@ -5,6 +5,7 @@ import ProjectPage, { generateMetadata } from '@/app/[slug]/page'
 import Home from '@/app/page'
 import { currentMember, type Member } from '@/lib/session'
 import { codesForUser, listMembers, type CodeInfo, type MemberRow } from '@/services/codes'
+import { latestHindsightRelease } from '@/services/hindsight-release'
 import {
   findEnabledProjectBySlug,
   listEnabledProjects,
@@ -14,6 +15,10 @@ import {
 
 vi.mock('@/lib/session', () => ({ currentMember: vi.fn() }))
 vi.mock('@/services/codes', () => ({ codesForUser: vi.fn(), listMembers: vi.fn() }))
+vi.mock('@/services/hindsight-release', () => ({
+  HINDSIGHT_RELEASES_PAGE: 'https://github.com/digitalgroundgame/obs-hindsight/releases/latest',
+  latestHindsightRelease: vi.fn(),
+}))
 vi.mock('@/services/projects', () => ({
   findEnabledProjectBySlug: vi.fn(),
   listEnabledProjects: vi.fn(),
@@ -186,6 +191,57 @@ describe('project page', () => {
     expect(html).toContain('>Get a new code</button>')
     expect(html).toContain('All DGG tools')
     expect(listEnabledProjects).not.toHaveBeenCalled()
+  })
+
+  it('walks through installing Hindsight, with the code as step 2', async () => {
+    vi.mocked(currentMember).mockResolvedValue(null)
+    vi.mocked(latestHindsightRelease).mockResolvedValue({
+      version: '0.9.0',
+      pageUrl: 'https://github.com/digitalgroundgame/obs-hindsight/releases/tag/0.9.0',
+      installer: {
+        name: 'obs-hindsight-0.9.0-windows-x64-installer.exe',
+        url: 'https://github.com/digitalgroundgame/obs-hindsight/releases/download/0.9.0/obs-hindsight-0.9.0-windows-x64-installer.exe',
+        sizeMb: 31.4,
+      },
+      zip: {
+        name: 'obs-hindsight-0.9.0-windows-x64.zip',
+        url: 'https://github.com/digitalgroundgame/obs-hindsight/releases/download/0.9.0/obs-hindsight-0.9.0-windows-x64.zip',
+        sizeMb: 30.1,
+      },
+    })
+    const html = await projectPage()
+    expect(html).toContain('Download Hindsight 0.9.0 for Windows (31.4 MB)')
+    expect(html).toContain(
+      'href="https://github.com/digitalgroundgame/obs-hindsight/releases/download/0.9.0/obs-hindsight-0.9.0-windows-x64-installer.exe"',
+    )
+    expect(html).toContain('-windows-x64.zip"')
+    expect(html).toContain('Run anyway')
+    expect(html.indexOf('1. Install the plugin')).toBeLessThan(
+      html.indexOf('Get a code for Hindsight'),
+    )
+    expect(html.indexOf('Get a code for Hindsight')).toBeLessThan(
+      html.indexOf('3. Set it up in OBS'),
+    )
+  })
+
+  it('links the release page when GitHub cannot say what is latest', async () => {
+    vi.mocked(currentMember).mockResolvedValue(null)
+    vi.mocked(latestHindsightRelease).mockResolvedValue(null)
+    const html = await projectPage()
+    expect(html).toContain('Download for Windows')
+    expect(html).toContain(
+      'href="https://github.com/digitalgroundgame/obs-hindsight/releases/latest"',
+    )
+    expect(html).not.toContain('.zip')
+  })
+
+  it('shows other tools without the Hindsight guide', async () => {
+    vi.mocked(findEnabledProjectBySlug).mockResolvedValue(project({ slug: 'other', name: 'Other' }))
+    vi.mocked(currentMember).mockResolvedValue(null)
+    const html = await projectPage('other')
+    expect(html).toContain('Get a code for Other')
+    expect(html).not.toContain('Install the plugin')
+    expect(latestHindsightRelease).not.toHaveBeenCalled()
   })
 
   it('is titled after the tool', async () => {
