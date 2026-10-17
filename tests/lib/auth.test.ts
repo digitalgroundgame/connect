@@ -1,7 +1,7 @@
 import { parseAdditionalUserInputFromProviderProfile } from 'better-auth/db'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { getAuth } from '@/lib/auth'
-import { isGuildMember } from '@/lib/discord'
+import { DiscordAPIError, isGuildMember } from '@/lib/discord'
 
 vi.mock('@/lib/discord', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/discord')>()),
@@ -30,6 +30,31 @@ describe('Discord sign-in', () => {
     ).toMatchObject(profile)
   })
 
+  const mapProfile = (discord: Record<string, unknown>) =>
+    (
+      getAuth().options.socialProviders!.discord!.mapProfileToUser as (
+        profile: unknown,
+      ) => Record<string, unknown>
+    )(discord)
+
+  it('makes a member from the Discord profile, with no real email', () => {
+    expect(
+      mapProfile({ id: '80351110224678912', username: 'nelly', global_name: 'Nelly' }),
+    ).toEqual({
+      email: '80351110224678912@discord.invalid',
+      emailVerified: false,
+      name: 'Nelly',
+      discordId: '80351110224678912',
+      discordUsername: 'nelly',
+    })
+  })
+
+  it('names a member by username when they have no display name', () => {
+    expect(mapProfile({ id: '1', username: 'nelly', global_name: null })).toMatchObject({
+      name: 'nelly',
+    })
+  })
+
   it('does not let members edit their own profile', async () => {
     const res = await getAuth().handler(
       new Request('http://localhost:3000/api/auth/update-user', {
@@ -56,6 +81,40 @@ describe('membership check at sign-in', () => {
       err: '401: Unauthorized',
     })
     log.mockRestore()
+  })
+
+  it('logs the status and code of a Discord error', async () => {
+    vi.mocked(isGuildMember).mockRejectedValueOnce(
+      new DiscordAPIError(
+        { code: 10004, message: 'Unknown Guild' },
+        10004,
+        404,
+        'GET',
+        'https://discord.com/api/v10/guilds/1/members/2',
+        {},
+      ),
+    )
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(await validate({ source })).toEqual({ error: 'discord_unavailable' })
+    expect(log).toHaveBeenCalledWith(
+      'membership check failed',
+      expect.objectContaining({ discordId: profile.discordId, status: 404, code: 10004 }),
+    )
+    log.mockRestore()
+  })
+
+  it.each([
+    ['another provider', { oauth: { providerId: 'github', profile: { id: '1' } } }],
+    ['no OAuth profile', {}],
+  ])('refuses %s without asking Discord', async (_case, other) => {
+    vi.mocked(isGuildMember).mockClear()
+    expect(await validate({ source: other })).toEqual({ error: 'discord_only' })
+    expect(isGuildMember).not.toHaveBeenCalled()
+  })
+
+  it('lets members of the server in', async () => {
+    vi.mocked(isGuildMember).mockResolvedValueOnce(true)
+    expect(await validate({ source })).toBeUndefined()
   })
 
   it('turns away accounts outside the server', async () => {

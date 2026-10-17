@@ -15,5 +15,10 @@ export default defineConfig({
     setupFiles: ['tests/setup.ts'],
     // The database tests share one schema, so run files one at a time.
     fileParallelism: false,
+    // npm run test:coverage. shadcn's generated components are left out.
+    coverage: {
+      include: ['src/**'],
+      exclude: ['src/components/ui/**'],
+    },
   },
 })
