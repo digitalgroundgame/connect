@@ -58,10 +58,11 @@ For sign-in to work locally, add `http://localhost:3000/api/auth/callback/discor
 as a redirect on the Discord app. To reach `/admin`, sign in once, then make
 yourself an admin as in [docs/DEPLOY.md](docs/DEPLOY.md#5-first-admin).
 
-| Script                | Does                                             |
-| --------------------- | ------------------------------------------------ |
-| `npm test`            | Vitest. Database tests need `TEST_DATABASE_URL`. |
-| `npm run lint`        | ESLint.                                          |
-| `npm run format`      | Prettier check (`format:fix` to rewrite).        |
-| `npm run check-types` | TypeScript, with Next.js route types.            |
-| `npm run db:generate` | A new migration from `src/db/schema.ts`.         |
+| Script                  | Does                                             |
+| ----------------------- | ------------------------------------------------ |
+| `npm test`              | Vitest. Database tests need `TEST_DATABASE_URL`. |
+| `npm run test:coverage` | The same, with a coverage report.                |
+| `npm run lint`          | ESLint.                                          |
+| `npm run format`        | Prettier check (`format:fix` to rewrite).        |
+| `npm run check-types`   | TypeScript, with Next.js route types.            |
+| `npm run db:generate`   | A new migration from `src/db/schema.ts`.         |
