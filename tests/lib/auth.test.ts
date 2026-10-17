@@ -1,6 +1,12 @@
 import { parseAdditionalUserInputFromProviderProfile } from 'better-auth/db'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { getAuth } from '@/lib/auth'
+import { isGuildMember } from '@/lib/discord'
+
+vi.mock('@/lib/discord', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/discord')>()),
+  isGuildMember: vi.fn(),
+}))
 
 beforeAll(() => {
   process.env.BETTER_AUTH_URL ??= 'http://localhost:3000'
@@ -33,5 +39,27 @@ describe('Discord sign-in', () => {
       }),
     )
     expect(res.status).toBe(404)
+  })
+})
+
+describe('membership check at sign-in', () => {
+  const source = { oauth: { providerId: 'discord', profile: { id: profile.discordId } } }
+  const validate = (input: unknown) =>
+    (getAuth().options.user?.validateUserInfo as (input: unknown) => Promise<unknown>)(input)
+
+  it('logs why Discord could not be asked', async () => {
+    vi.mocked(isGuildMember).mockRejectedValueOnce(new Error('401: Unauthorized'))
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(await validate({ source })).toEqual({ error: 'discord_unavailable' })
+    expect(log).toHaveBeenCalledWith('membership check failed', {
+      discordId: profile.discordId,
+      err: '401: Unauthorized',
+    })
+    log.mockRestore()
+  })
+
+  it('turns away accounts outside the server', async () => {
+    vi.mocked(isGuildMember).mockResolvedValueOnce(false)
+    expect(await validate({ source })).toEqual({ error: 'not_in_server' })
   })
 })

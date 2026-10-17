@@ -5,7 +5,7 @@ import { nextCookies } from 'better-auth/next-js'
 import { admin } from 'better-auth/plugins'
 import { db } from '@/db'
 import * as schema from '@/db/schema'
-import { isGuildMember } from './discord'
+import { DiscordAPIError, isGuildMember } from './discord'
 
 function createAuth() {
   const clientIpHeader = process.env.CLIENT_IP_HEADER?.toLowerCase()
@@ -51,7 +51,13 @@ function createAuth() {
         let member: boolean
         try {
           member = await isGuildMember(discordId)
-        } catch {
+        } catch (err) {
+          // Usually a bad bot token, guild ID, or the bot missing from the server.
+          console.error('membership check failed', {
+            discordId,
+            ...(err instanceof DiscordAPIError && { status: err.status, code: err.code }),
+            err: err instanceof Error ? err.message : String(err),
+          })
           return { error: 'discord_unavailable' }
         }
         if (!member) return { error: 'not_in_server' }
