@@ -120,6 +120,35 @@ describe('signIn', () => {
     })
   })
 
+  function signInFrom(returnTo: string) {
+    const form = new FormData()
+    form.set('returnTo', returnTo)
+    return signIn(form)
+  }
+
+  it('comes back to the project page it started on', async () => {
+    const signInSocial = vi.fn().mockResolvedValue({ url: 'https://discord.com/oauth2/authorize' })
+    vi.mocked(getAuth).mockReturnValue({ api: { signInSocial } } as never)
+    await expect(signInFrom('/hindsight')).rejects.toThrow('NEXT_REDIRECT https://discord.com')
+    expect(signInSocial).toHaveBeenCalledWith({
+      body: { provider: 'discord', callbackURL: '/hindsight', errorCallbackURL: '/hindsight' },
+    })
+  })
+
+  it.each(['https://evil.test', '//evil.test', '/admin/../x', '/Hindsight', ''])(
+    'comes back home instead of to %j',
+    async (returnTo) => {
+      const signInSocial = vi
+        .fn()
+        .mockResolvedValue({ url: 'https://discord.com/oauth2/authorize' })
+      vi.mocked(getAuth).mockReturnValue({ api: { signInSocial } } as never)
+      await expect(signInFrom(returnTo)).rejects.toThrow('NEXT_REDIRECT')
+      expect(signInSocial).toHaveBeenCalledWith({
+        body: { provider: 'discord', callbackURL: '/', errorCallbackURL: '/' },
+      })
+    },
+  )
+
   it('goes home when Better Auth gives no link', async () => {
     const signInSocial = vi.fn().mockResolvedValue({})
     vi.mocked(getAuth).mockReturnValue({ api: { signInSocial } } as never)

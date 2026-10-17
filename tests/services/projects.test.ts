@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import {
   createProject,
+  findEnabledProjectBySlug,
   findProject,
   findProjectBySlug,
   listEnabledProjects,
@@ -105,6 +106,19 @@ describe.skipIf(!testDatabaseUrl)('services/projects', () => {
   describe('findProject', () => {
     it('returns null for an unknown id', async () => {
       expect(await findProject('00000000-0000-4000-8000-000000000000')).toBeNull()
+    })
+  })
+
+  describe('findEnabledProjectBySlug', () => {
+    it('finds a turned-on project by its slug', async () => {
+      const created = await createProject(input())
+      expect(await findEnabledProjectBySlug('hindsight')).toEqual(created)
+    })
+
+    it('hides a turned-off project and an unknown slug', async () => {
+      await createProject(input({ enabled: false }))
+      expect(await findEnabledProjectBySlug('hindsight')).toBeNull()
+      expect(await findEnabledProjectBySlug('nope')).toBeNull()
     })
   })
 

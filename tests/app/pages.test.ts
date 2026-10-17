@@ -3,10 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import NewProjectPage from '@/app/admin/new/page'
 import AdminPage from '@/app/admin/page'
 import EditProjectPage, { generateMetadata as editMetadata } from '@/app/admin/projects/[slug]/page'
+import ProjectPage, { generateMetadata } from '@/app/[slug]/page'
 import Home from '@/app/page'
 import { currentMember, type Member } from '@/lib/session'
 import { codesForUser, listMembers, type CodeInfo, type MemberRow } from '@/services/codes'
+import { latestHindsightRelease } from '@/services/hindsight-release'
 import {
+  findEnabledProjectBySlug,
   findProjectBySlug,
   listEnabledProjects,
   listProjects,
@@ -15,7 +18,12 @@ import {
 
 vi.mock('@/lib/session', () => ({ currentMember: vi.fn() }))
 vi.mock('@/services/codes', () => ({ codesForUser: vi.fn(), listMembers: vi.fn() }))
+vi.mock('@/services/hindsight-release', () => ({
+  HINDSIGHT_RELEASES_PAGE: 'https://github.com/digitalgroundgame/obs-hindsight/releases/latest',
+  latestHindsightRelease: vi.fn(),
+}))
 vi.mock('@/services/projects', () => ({
+  findEnabledProjectBySlug: vi.fn(),
   findProjectBySlug: vi.fn(),
   listEnabledProjects: vi.fn(),
   listProjects: vi.fn(),
@@ -144,6 +152,107 @@ describe('home page, signed in', () => {
     expect(await home()).not.toContain('href="/admin"')
     vi.mocked(currentMember).mockResolvedValue({ ...member, isAdmin: true })
     expect(await home()).toContain('href="/admin"')
+  })
+})
+
+describe('project page', () => {
+  async function projectPage(slug = 'hindsight', error?: string): Promise<string> {
+    const searchParams = Promise.resolve(error === undefined ? {} : { error })
+    return renderToStaticMarkup(
+      await ProjectPage({ params: Promise.resolve({ slug }), searchParams }),
+    )
+  }
+
+  beforeEach(() => {
+    vi.mocked(findEnabledProjectBySlug).mockResolvedValue(project())
+  })
+
+  it('is not found for an unknown or turned-off project', async () => {
+    vi.mocked(findEnabledProjectBySlug).mockResolvedValue(null)
+    await expect(projectPage('nope')).rejects.toThrow('NEXT_NOT_FOUND')
+    expect(findEnabledProjectBySlug).toHaveBeenCalledWith('nope')
+  })
+
+  it('asks a signed-out visitor to sign in, coming back here', async () => {
+    vi.mocked(currentMember).mockResolvedValue(null)
+    const html = await projectPage()
+    expect(html).toContain('Get a code for Hindsight')
+    expect(html).toContain('Answers on Discord')
+    expect(html).toContain('name="returnTo" value="/hindsight"')
+    expect(codesForUser).not.toHaveBeenCalled()
+  })
+
+  it('explains a failed sign-in', async () => {
+    vi.mocked(currentMember).mockResolvedValue(null)
+    expect(await projectPage('hindsight', 'not_in_server')).toContain('Join the server')
+  })
+
+  it('shows only this tool to a member', async () => {
+    vi.mocked(codesForUser).mockResolvedValue(new Map([[project().id, code()]]))
+    const html = await projectPage()
+    expect(html).toContain('Signed in as <strong>nelly</strong>')
+    expect(html).toContain('not used yet.')
+    expect(html).toContain('>Get a new code</button>')
+    expect(html).toContain('All DGG tools')
+    expect(listEnabledProjects).not.toHaveBeenCalled()
+  })
+
+  it('walks through installing Hindsight, with the code as step 2', async () => {
+    vi.mocked(currentMember).mockResolvedValue(null)
+    vi.mocked(latestHindsightRelease).mockResolvedValue({
+      version: '0.9.0',
+      pageUrl: 'https://github.com/digitalgroundgame/obs-hindsight/releases/tag/0.9.0',
+      installer: {
+        name: 'obs-hindsight-0.9.0-windows-x64-installer.exe',
+        url: 'https://github.com/digitalgroundgame/obs-hindsight/releases/download/0.9.0/obs-hindsight-0.9.0-windows-x64-installer.exe',
+        sizeMb: 31.4,
+      },
+      zip: {
+        name: 'obs-hindsight-0.9.0-windows-x64.zip',
+        url: 'https://github.com/digitalgroundgame/obs-hindsight/releases/download/0.9.0/obs-hindsight-0.9.0-windows-x64.zip',
+        sizeMb: 30.1,
+      },
+    })
+    const html = await projectPage()
+    expect(html).toContain('Download Hindsight 0.9.0 for Windows (31.4 MB)')
+    expect(html).toContain(
+      'href="https://github.com/digitalgroundgame/obs-hindsight/releases/download/0.9.0/obs-hindsight-0.9.0-windows-x64-installer.exe"',
+    )
+    expect(html).toContain('-windows-x64.zip"')
+    expect(html).toContain('Run anyway')
+    expect(html.indexOf('1. Install the plugin')).toBeLessThan(
+      html.indexOf('Get a code for Hindsight'),
+    )
+    expect(html.indexOf('Get a code for Hindsight')).toBeLessThan(
+      html.indexOf('3. Set it up in OBS'),
+    )
+  })
+
+  it('links the release page when GitHub cannot say what is latest', async () => {
+    vi.mocked(currentMember).mockResolvedValue(null)
+    vi.mocked(latestHindsightRelease).mockResolvedValue(null)
+    const html = await projectPage()
+    expect(html).toContain('Download for Windows')
+    expect(html).toContain(
+      'href="https://github.com/digitalgroundgame/obs-hindsight/releases/latest"',
+    )
+    expect(html).not.toContain('.zip')
+  })
+
+  it('shows other tools without the Hindsight guide', async () => {
+    vi.mocked(findEnabledProjectBySlug).mockResolvedValue(project({ slug: 'other', name: 'Other' }))
+    vi.mocked(currentMember).mockResolvedValue(null)
+    const html = await projectPage('other')
+    expect(html).toContain('Get a code for Other')
+    expect(html).not.toContain('Install the plugin')
+    expect(latestHindsightRelease).not.toHaveBeenCalled()
+  })
+
+  it('is titled after the tool', async () => {
+    const params = Promise.resolve({ slug: 'hindsight' })
+    expect(await generateMetadata({ params, searchParams: Promise.resolve({}) })).toEqual({
+      title: 'Hindsight',
+    })
   })
 })
 

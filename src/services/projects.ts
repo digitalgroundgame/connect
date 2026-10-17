@@ -1,4 +1,4 @@
-import { asc, eq } from 'drizzle-orm'
+import { and, asc, eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { projects } from '@/db/schema'
 
@@ -23,6 +23,15 @@ export function listEnabledProjects(): Promise<Project[]> {
 
 export async function findProject(id: string): Promise<Project | null> {
   const [row] = await db.select().from(projects).where(eq(projects.id, id))
+  return row ?? null
+}
+
+/** The project at /<slug>, if it is turned on. */
+export async function findEnabledProjectBySlug(slug: string): Promise<Project | null> {
+  const [row] = await db
+    .select()
+    .from(projects)
+    .where(and(eq(projects.slug, slug), eq(projects.enabled, true)))
   return row ?? null
 }
 

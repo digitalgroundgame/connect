@@ -36,6 +36,8 @@ const projectSchema = z.object({
   enabled: z.literal('on').optional().transform(Boolean),
 })
 
+const RESERVED_SLUGS = new Set(['admin', 'api'])
+
 const newProjectSchema = projectSchema.extend({
   slug: z
     .string()
@@ -44,7 +46,9 @@ const newProjectSchema = projectSchema.extend({
     .regex(
       /^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$/,
       'The slug is 1 to 32 lowercase letters, digits or dashes, like "hindsight".',
-    ),
+    )
+    // The project's page is /<slug>, so it can't share a path with the site's own pages.
+    .refine((slug) => !RESERVED_SLUGS.has(slug), 'That slug is taken by a page on this site.'),
 })
 
 /** Unset fields (an unchecked switch) are missing from the form, not empty. */
