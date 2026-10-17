@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { DiscordLogo } from '@/components/discord-logo'
 import { currentMember } from '@/lib/session'
 import { codesForUser, type CodeInfo } from '@/services/codes'
 import { listEnabledProjects } from '@/services/projects'
@@ -57,7 +58,12 @@ export default async function Home({ searchParams }: PageProps<'/'>) {
             </Alert>
           )}
           <form action={signIn}>
-            <Button type="submit" size="lg">
+            <Button
+              type="submit"
+              size="lg"
+              className="h-11 gap-2.5 bg-discord px-5 text-base text-white hover:bg-discord-hover focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-discord focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+            >
+              <DiscordLogo className="size-6" />
               Sign in with Discord
             </Button>
           </form>
