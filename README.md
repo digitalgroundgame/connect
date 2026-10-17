@@ -6,6 +6,8 @@ Discord DMs from the DGG bot.
 
 - Members of the DGG Discord server sign in with Discord and get one code per
   tool ("project"). Getting a new code turns the old one off.
+- Each project has its own page at `/<slug>`, such as `/hindsight`, to share
+  with the people who use it. Signing in there comes back to that page.
 - Admins add and edit projects at `/admin`, turn off any member's code, and
   make other members admins.
 - Tools send `Authorization: Bearer <code>` to the API below. A project that

@@ -106,6 +106,8 @@ describe.skipIf(!testDatabaseUrl)('admin actions', () => {
       ['a slug with spaces', { slug: 'two words', name: 'Tool' }, /slug/],
       ['a slug over 32 characters', { slug: 'a'.repeat(33), name: 'Tool' }, /slug/],
       ['a slug ending in a dash', { slug: 'tool-', name: 'Tool' }, /slug/],
+      ['the slug of a site page', { slug: 'admin', name: 'Tool' }, /taken by a page/],
+      ['the API slug', { slug: 'API', name: 'Tool' }, /taken by a page/],
       ['no name', { slug: 'tool', name: '  ' }, /.+/],
       ['a long name', { slug: 'tool', name: 'n'.repeat(81) }, /80 characters/],
       ['a long description', { slug: 'tool', name: 'Tool', description: 'd'.repeat(501) }, /500/],

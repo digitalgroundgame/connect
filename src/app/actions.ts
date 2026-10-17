@@ -10,11 +10,19 @@ import { currentMember } from '@/lib/session'
 import { issueCode } from '@/services/codes'
 import { findProject } from '@/services/projects'
 
-export async function signIn(): Promise<void> {
+/** Only the home page or a project page, so sign-in can't redirect anywhere else. */
+const returnPath = z
+  .string()
+  .regex(/^\/[a-z0-9-]*$/)
+  .catch('/')
+
+/** Starts Discord sign-in, coming back to the page the form was on. */
+export async function signIn(form?: FormData): Promise<void> {
+  const back = returnPath.parse(form?.get('returnTo'))
   const result = await getAuth().api.signInSocial({
-    body: { provider: 'discord', callbackURL: '/', errorCallbackURL: '/' },
+    body: { provider: 'discord', callbackURL: back, errorCallbackURL: back },
   })
-  if (result.url === undefined) redirect('/')
+  if (result.url === undefined) redirect(back)
   redirect(result.url)
 }
 
@@ -46,5 +54,6 @@ export async function getCode(_previous: CodeState, form: FormData): Promise<Cod
   const code = await issueCode(member.id, project.id)
   console.info('code issued', { userId: member.id, project: project.slug })
   revalidatePath('/')
+  revalidatePath(`/${project.slug}`)
   return { status: 'issued', code }
 }

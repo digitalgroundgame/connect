@@ -1,14 +1,24 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import AdminPage from '@/app/admin/page'
+import ProjectPage, { generateMetadata } from '@/app/[slug]/page'
 import Home from '@/app/page'
 import { currentMember, type Member } from '@/lib/session'
 import { codesForUser, listMembers, type CodeInfo, type MemberRow } from '@/services/codes'
-import { listEnabledProjects, listProjects, type Project } from '@/services/projects'
+import {
+  findEnabledProjectBySlug,
+  listEnabledProjects,
+  listProjects,
+  type Project,
+} from '@/services/projects'
 
 vi.mock('@/lib/session', () => ({ currentMember: vi.fn() }))
 vi.mock('@/services/codes', () => ({ codesForUser: vi.fn(), listMembers: vi.fn() }))
-vi.mock('@/services/projects', () => ({ listEnabledProjects: vi.fn(), listProjects: vi.fn() }))
+vi.mock('@/services/projects', () => ({
+  findEnabledProjectBySlug: vi.fn(),
+  listEnabledProjects: vi.fn(),
+  listProjects: vi.fn(),
+}))
 // The pages only pass the actions to forms; nothing here runs them.
 vi.mock('@/app/actions', () => ({ signIn: vi.fn(), signOut: vi.fn(), getCode: vi.fn() }))
 vi.mock('@/app/admin/actions', () => ({
@@ -133,6 +143,56 @@ describe('home page, signed in', () => {
     expect(await home()).not.toContain('href="/admin"')
     vi.mocked(currentMember).mockResolvedValue({ ...member, isAdmin: true })
     expect(await home()).toContain('href="/admin"')
+  })
+})
+
+describe('project page', () => {
+  async function projectPage(slug = 'hindsight', error?: string): Promise<string> {
+    const searchParams = Promise.resolve(error === undefined ? {} : { error })
+    return renderToStaticMarkup(
+      await ProjectPage({ params: Promise.resolve({ slug }), searchParams }),
+    )
+  }
+
+  beforeEach(() => {
+    vi.mocked(findEnabledProjectBySlug).mockResolvedValue(project())
+  })
+
+  it('is not found for an unknown or turned-off project', async () => {
+    vi.mocked(findEnabledProjectBySlug).mockResolvedValue(null)
+    await expect(projectPage('nope')).rejects.toThrow('NEXT_NOT_FOUND')
+    expect(findEnabledProjectBySlug).toHaveBeenCalledWith('nope')
+  })
+
+  it('asks a signed-out visitor to sign in, coming back here', async () => {
+    vi.mocked(currentMember).mockResolvedValue(null)
+    const html = await projectPage()
+    expect(html).toContain('Get a code for Hindsight')
+    expect(html).toContain('Answers on Discord')
+    expect(html).toContain('name="returnTo" value="/hindsight"')
+    expect(codesForUser).not.toHaveBeenCalled()
+  })
+
+  it('explains a failed sign-in', async () => {
+    vi.mocked(currentMember).mockResolvedValue(null)
+    expect(await projectPage('hindsight', 'not_in_server')).toContain('Join the server')
+  })
+
+  it('shows only this tool to a member', async () => {
+    vi.mocked(codesForUser).mockResolvedValue(new Map([[project().id, code()]]))
+    const html = await projectPage()
+    expect(html).toContain('Signed in as <strong>nelly</strong>')
+    expect(html).toContain('not used yet.')
+    expect(html).toContain('>Get a new code</button>')
+    expect(html).toContain('All DGG tools')
+    expect(listEnabledProjects).not.toHaveBeenCalled()
+  })
+
+  it('is titled after the tool', async () => {
+    const params = Promise.resolve({ slug: 'hindsight' })
+    expect(await generateMetadata({ params, searchParams: Promise.resolve({}) })).toEqual({
+      title: 'Hindsight',
+    })
   })
 })
 
