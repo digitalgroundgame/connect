@@ -48,3 +48,9 @@ export async function updateProject(
   const [row] = await db.update(projects).set(input).where(eq(projects.id, id)).returning()
   return row ?? null
 }
+
+/** Any project, on or off, by its slug: for the admin's edit page. */
+export async function findProjectBySlug(slug: string): Promise<Project | null> {
+  const [row] = await db.select().from(projects).where(eq(projects.slug, slug))
+  return row ?? null
+}

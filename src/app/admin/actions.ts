@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { z } from 'zod'
 import { currentMember, type Member } from '@/lib/session'
 import { revokeCode, setRole } from '@/services/codes'
@@ -95,9 +95,12 @@ export async function saveProject(_previous: FormState, form: FormData): Promise
       throw err
     }
     console.info('project created', { admin: admin.discordId, project: parsed.data.slug })
+    revalidatePath('/admin', 'layout')
+    // Back to the list, where the new project now shows.
+    redirect('/admin')
   }
 
-  revalidatePath('/admin')
+  revalidatePath('/admin', 'layout')
   return { status: 'saved' }
 }
 

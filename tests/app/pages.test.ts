@@ -1,6 +1,8 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import NewProjectPage from '@/app/admin/new/page'
 import AdminPage from '@/app/admin/page'
+import EditProjectPage, { generateMetadata as editMetadata } from '@/app/admin/projects/[slug]/page'
 import ProjectPage, { generateMetadata } from '@/app/[slug]/page'
 import Home from '@/app/page'
 import { currentMember, type Member } from '@/lib/session'
@@ -8,6 +10,7 @@ import { codesForUser, listMembers, type CodeInfo, type MemberRow } from '@/serv
 import { latestHindsightRelease } from '@/services/hindsight-release'
 import {
   findEnabledProjectBySlug,
+  findProjectBySlug,
   listEnabledProjects,
   listProjects,
   type Project,
@@ -21,6 +24,7 @@ vi.mock('@/services/hindsight-release', () => ({
 }))
 vi.mock('@/services/projects', () => ({
   findEnabledProjectBySlug: vi.fn(),
+  findProjectBySlug: vi.fn(),
   listEnabledProjects: vi.fn(),
   listProjects: vi.fn(),
 }))
@@ -273,7 +277,10 @@ describe('admin page', () => {
   it('lists projects for an admin', async () => {
     const html = await adminPage([])
     expect(html).toContain('Hindsight')
-    expect(html).toContain('Add a project')
+    expect(html).toContain('href="/admin/projects/hindsight"')
+    expect(html).toContain('href="/admin/new"')
+    // The project forms live on their own pages.
+    expect(html).not.toContain('name="slug"')
   })
 
   it('offers to turn off a live code, and marks a revoked one', async () => {
@@ -302,5 +309,62 @@ describe('admin page', () => {
     expect(html.match(/>Remove admin</g)).toHaveLength(1)
     expect(html.match(/>Make admin</g)).toHaveLength(1)
     expect(html).toContain('No codes')
+  })
+})
+
+describe('add project page', () => {
+  it.each([
+    ['signed out', null],
+    ['a member', member],
+  ])('is not found for someone %s', async (_who, who) => {
+    vi.mocked(currentMember).mockResolvedValue(who)
+    await expect(NewProjectPage()).rejects.toThrow('NEXT_NOT_FOUND')
+  })
+
+  it('shows an empty form to an admin', async () => {
+    vi.mocked(currentMember).mockResolvedValue({ ...member, isAdmin: true })
+    const html = renderToStaticMarkup(await NewProjectPage())
+    expect(html).toContain('Add a project')
+    expect(html).toContain('name="slug"')
+    expect(html).toContain('>Add project</button>')
+    expect(html).toContain('href="/admin"')
+  })
+})
+
+describe('edit project page', () => {
+  const params = (slug = 'hindsight') => ({
+    params: Promise.resolve({ slug }),
+    searchParams: Promise.resolve({}),
+  })
+
+  beforeEach(() => {
+    vi.mocked(findProjectBySlug).mockResolvedValue(project({ enabled: false }))
+  })
+
+  it.each([
+    ['signed out', null],
+    ['a member', member],
+  ])('is not found for someone %s', async (_who, who) => {
+    vi.mocked(currentMember).mockResolvedValue(who)
+    await expect(EditProjectPage(params())).rejects.toThrow('NEXT_NOT_FOUND')
+    expect(findProjectBySlug).not.toHaveBeenCalled()
+    expect(await editMetadata(params())).toEqual({})
+  })
+
+  it('is not found for an unknown project', async () => {
+    vi.mocked(currentMember).mockResolvedValue({ ...member, isAdmin: true })
+    vi.mocked(findProjectBySlug).mockResolvedValue(null)
+    await expect(EditProjectPage(params('nope'))).rejects.toThrow('NEXT_NOT_FOUND')
+    expect(findProjectBySlug).toHaveBeenCalledWith('nope')
+  })
+
+  it('fills the form with the project, even one that is off', async () => {
+    vi.mocked(currentMember).mockResolvedValue({ ...member, isAdmin: true })
+    const html = renderToStaticMarkup(await EditProjectPage(params()))
+    expect(html).toContain('value="hindsight"')
+    expect(html).toContain('Answers on Discord')
+    expect(html).toContain('>Off<')
+    expect(html).toContain('>Save</button>')
+    expect(await editMetadata(params())).toEqual({ title: 'Edit Hindsight' })
   })
 })

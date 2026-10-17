@@ -3,6 +3,7 @@ import {
   createProject,
   findEnabledProjectBySlug,
   findProject,
+  findProjectBySlug,
   listEnabledProjects,
   listProjects,
   updateProject,
@@ -118,6 +119,17 @@ describe.skipIf(!testDatabaseUrl)('services/projects', () => {
       await createProject(input({ enabled: false }))
       expect(await findEnabledProjectBySlug('hindsight')).toBeNull()
       expect(await findEnabledProjectBySlug('nope')).toBeNull()
+    })
+  })
+
+  describe('findProjectBySlug', () => {
+    it('finds a project by its slug, even one that is off', async () => {
+      const created = await createProject(input({ enabled: false }))
+      expect(await findProjectBySlug('hindsight')).toEqual(created)
+    })
+
+    it('returns null for an unknown slug', async () => {
+      expect(await findProjectBySlug('nope')).toBeNull()
     })
   })
 

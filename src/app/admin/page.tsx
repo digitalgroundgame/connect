@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   Table,
   TableBody,
@@ -15,7 +16,6 @@ import { currentMember } from '@/lib/session'
 import { listMembers } from '@/services/codes'
 import { listProjects } from '@/services/projects'
 import { revokeMemberCode, setMemberAdmin } from './actions'
-import { ProjectForm } from './project-form'
 
 export const metadata: Metadata = { title: 'Admin' }
 
@@ -32,30 +32,53 @@ export default async function AdminPage() {
   return (
     <div className="space-y-8">
       <section className="space-y-4">
-        <h1 className="font-heading text-2xl font-bold">Projects</h1>
-        {projects.map((project) => (
-          <Card key={project.id}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                {project.name}
-                {!project.enabled && <Badge variant="outline">Off</Badge>}
-                {project.canDm && <Badge variant="secondary">DMs</Badge>}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ProjectForm project={project} />
-            </CardContent>
-          </Card>
-        ))}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="font-heading text-2xl font-bold">Projects</h1>
+          <Button nativeButton={false} render={<Link href="/admin/new" />}>
+            Add project
+          </Button>
+        </div>
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Add a project</CardTitle>
-            <CardDescription>
-              Members can get a code for it as soon as it is enabled.
-            </CardDescription>
-          </CardHeader>
           <CardContent>
-            <ProjectForm />
+            {projects.length === 0 ? (
+              <p className="text-muted-foreground">No projects yet.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Project</TableHead>
+                    <TableHead>Slug</TableHead>
+                    <TableHead>
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {projects.map((project) => (
+                    <TableRow key={project.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {project.name}
+                          {!project.enabled && <Badge variant="outline">Off</Badge>}
+                          {project.canDm && <Badge variant="secondary">DMs</Badge>}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{project.slug}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          nativeButton={false}
+                          render={<Link href={`/admin/projects/${project.slug}`} />}
+                          aria-label={`Edit ${project.name}`}
+                        >
+                          Edit
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </section>
