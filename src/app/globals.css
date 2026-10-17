@@ -32,9 +32,7 @@
   --input: oklch(0.88 0.006 264.5);
   --ring: #1144ff;
   --link: #1144ff;
-  /* The same in both schemes: the header bar and Discord's Blurple button. */
-  --brand: #1144ff;
-  --brand-foreground: oklch(1 0 0);
+  /* Discord's Blurple, the same in both schemes. */
   --discord: #5865f2;
   --discord-hover: #4752c4;
 }
@@ -87,8 +85,6 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-link: var(--link);
-  --color-brand: var(--brand);
-  --color-brand-foreground: var(--brand-foreground);
   --color-discord: var(--discord);
   --color-discord-hover: var(--discord-hover);
   --radius-sm: calc(var(--radius) - 4px);
@@ -102,7 +98,7 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground border-t-4 border-t-primary;
   }
   a:not([data-slot]) {
     @apply text-link underline underline-offset-2;
