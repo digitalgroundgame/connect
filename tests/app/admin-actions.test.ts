@@ -22,6 +22,9 @@ vi.mock('next/navigation', () => ({
   notFound: vi.fn(() => {
     throw new Error('NEXT_NOT_FOUND')
   }),
+  redirect: vi.fn((url: string) => {
+    throw new Error(`NEXT_REDIRECT ${url}`)
+  }),
 }))
 
 function form(values: Record<string, string>): FormData {
@@ -74,17 +77,18 @@ describe.skipIf(!testDatabaseUrl)('admin actions', () => {
 
   describe('saveProject', () => {
     it('creates a project, lowercasing the slug and reading the switches', async () => {
-      const state = await saveProject(
-        idle,
-        form({
-          slug: ' Hindsight ',
-          name: ' Hindsight ',
-          description: 'Answers on Discord',
-          homepageUrl: 'https://example.com',
-          canDm: 'on',
-        }),
-      )
-      expect(state).toEqual({ status: 'saved' })
+      await expect(
+        saveProject(
+          idle,
+          form({
+            slug: ' Hindsight ',
+            name: ' Hindsight ',
+            description: 'Answers on Discord',
+            homepageUrl: 'https://example.com',
+            canDm: 'on',
+          }),
+        ),
+      ).rejects.toThrow('NEXT_REDIRECT /admin')
       expect(await listProjects()).toMatchObject([
         {
           slug: 'hindsight',
@@ -98,7 +102,9 @@ describe.skipIf(!testDatabaseUrl)('admin actions', () => {
     })
 
     it('stores an empty homepage as none', async () => {
-      await saveProject(idle, form({ slug: 'tool', name: 'Tool', homepageUrl: '' }))
+      await expect(
+        saveProject(idle, form({ slug: 'tool', name: 'Tool', homepageUrl: '' })),
+      ).rejects.toThrow('NEXT_REDIRECT')
       expect((await listProjects())[0]!.homepageUrl).toBeNull()
     })
 
