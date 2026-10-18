@@ -41,8 +41,9 @@ export function HindsightGuide({
           your mic on your own PC, and uses your own Claude API key.
         </p>
         <p className="text-muted-foreground">
-          Hindsight is in early testing. For now it writes each answer to the OBS log (Help &gt; Log
-          Files); Discord DMs come in an update.
+          Answers come from the DGG bot, so stay in the DGG Discord server with DMs from server
+          members turned on. Each question and answer is also written to the OBS log (Help &gt; Log
+          Files).
         </p>
       </div>
 
@@ -113,12 +114,17 @@ export function HindsightGuide({
             uses up to three searches a question, at $0.01 each.
           </li>
           <li>
+            Click <strong>Test</strong> beside your Hindsight code. The DGG bot sends you a test DM
+            on Discord.
+          </li>
+          <li>
             Open your mic&apos;s <strong>Filters</strong> and add <strong>Hindsight</strong>.
           </li>
           <li>
             In <strong>Settings &gt; Hotkeys</strong>, find your mic and bind &quot;Hindsight:
             answer the last question&quot;.
           </li>
+          <li>Ask a question out loud, then press the hotkey. The answer arrives as a DM.</li>
         </ol>
         <p className="text-sm text-muted-foreground">
           When a new version is out, the Hindsight filter&apos;s settings show an{' '}
