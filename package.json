@@ -17,11 +17,13 @@
   "dependencies": {
     "@base-ui/react": "^1.9.0",
     "@discordjs/rest": "^2.6.3",
+    "@wrksz/themes": "^2.0.3",
     "better-auth": "^1.7.10",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "discord-api-types": "^0.38.56",
     "drizzle-orm": "^0.45.4",
+    "lucide-react": "^1.59.0",
     "next": "16.4.2",
     "pg": "^8.23.1",
     "rate-limiter-flexible": "^11.2.2",

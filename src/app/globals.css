@@ -2,8 +2,8 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 
-/* Follow the system color scheme instead of a .dark class. */
-@custom-variant dark (@media (prefers-color-scheme: dark));
+/* @wrksz/themes puts .dark on <html> for the dark theme, or for System when the OS is dark. */
+@custom-variant dark (&:is(.dark *));
 
 /*
  * shadcn/ui theme (base-nova, neutral) with DGG blue (#1144FF) as the primary
@@ -11,7 +11,6 @@
  * Every text color meets WCAG AA (4.5:1) on its background.
  */
 :root {
-  color-scheme: light dark;
   --radius: 0.625rem;
   --background: oklch(0.97 0.003 264.5);
   --foreground: oklch(0.205 0.006 285.9);
@@ -37,32 +36,30 @@
   --discord-hover: #4752c4;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: oklch(0.17 0.004 285.9);
-    --foreground: oklch(0.94 0.005 285.9);
-    --card: oklch(0.21 0.006 285.9);
-    --card-foreground: oklch(0.94 0.005 285.9);
-    --popover: oklch(0.21 0.006 285.9);
-    --popover-foreground: oklch(0.94 0.005 285.9);
-    /*
-     * Buttons stay DGG blue. Links and focus rings use DGG blue lightened only
-     * as far as AA needs (4.8:1 on cards): a paler blue reads as Discord's Blurple.
-     */
-    --primary: #1144ff;
-    --primary-foreground: oklch(1 0 0);
-    --secondary: oklch(0.27 0.006 285.9);
-    --secondary-foreground: oklch(0.94 0.005 285.9);
-    --muted: oklch(0.27 0.006 285.9);
-    --muted-foreground: oklch(0.74 0.01 285.9);
-    --accent: oklch(0.27 0.006 285.9);
-    --accent-foreground: oklch(0.94 0.005 285.9);
-    --destructive: oklch(0.7 0.19 22);
-    --border: oklch(1 0 0 / 12%);
-    --input: oklch(1 0 0 / 16%);
-    --ring: #4d7cff;
-    --link: #4d7cff;
-  }
+.dark {
+  --background: oklch(0.17 0.004 285.9);
+  --foreground: oklch(0.94 0.005 285.9);
+  --card: oklch(0.21 0.006 285.9);
+  --card-foreground: oklch(0.94 0.005 285.9);
+  --popover: oklch(0.21 0.006 285.9);
+  --popover-foreground: oklch(0.94 0.005 285.9);
+  /*
+   * Buttons stay DGG blue. Links and focus rings use DGG blue lightened only
+   * as far as AA needs (4.8:1 on cards): a paler blue reads as Discord's Blurple.
+   */
+  --primary: #1144ff;
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.27 0.006 285.9);
+  --secondary-foreground: oklch(0.94 0.005 285.9);
+  --muted: oklch(0.27 0.006 285.9);
+  --muted-foreground: oklch(0.74 0.01 285.9);
+  --accent: oklch(0.27 0.006 285.9);
+  --accent-foreground: oklch(0.94 0.005 285.9);
+  --destructive: oklch(0.7 0.19 22);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: #4d7cff;
+  --link: #4d7cff;
 }
 
 @theme inline {
