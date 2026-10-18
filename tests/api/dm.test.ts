@@ -198,7 +198,7 @@ describe('messages: success', () => {
     expect(mocks.sendMessage).toHaveBeenCalledTimes(1)
     const [channel, content] = mocks.sendMessage.mock.calls[0]!
     expect(channel).toBe('channel-cached')
-    expect(content).toBe('hello\n\n-# Sent by Hindsight through DGG Connect.')
+    expect(content).toBe('hello\n\n-# Sent by Hindsight through Digital Ground Game Connect.')
     expect(content).toBe(withFooter('hello', 'Hindsight'))
   })
 
@@ -656,7 +656,7 @@ describe('test', () => {
     expect(channel).toBe('channel-cached')
     expect(content).toBe(testMessage('Hindsight'))
     expect(content).toBe(
-      'Hindsight is linked to this Discord account. Its messages will arrive here.\n\n-# Test message from DGG Connect.',
+      'Hindsight is linked to this Discord account. Its messages will arrive here.\n\n-# Test message from Digital Ground Game Connect.',
     )
     expect(options?.nonce).toBeUndefined()
   })

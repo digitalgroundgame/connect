@@ -13,7 +13,7 @@ export const projects = pgTable('projects', {
   description: text('description').notNull().default(''),
   /** Where members download or read about the tool. */
   homepageUrl: text('homepage_url'),
-  /** Whether codes for this project may DM their member through the DGG bot. */
+  /** Whether codes for this project may DM their member through the Digital Ground Game bot. */
   canDm: boolean('can_dm').notNull().default(false),
   /** A disabled project hides from members and its codes stop working. */
   enabled: boolean('enabled').notNull().default(true),

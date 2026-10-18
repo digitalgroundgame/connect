@@ -41,7 +41,7 @@ function createAuth() {
         discordUsername: { type: 'string', required: true, input: true },
         dmChannelId: { type: 'string', required: false, input: false },
       },
-      // Only members of the DGG Discord server get in. Sessions outlive a
+      // Only members of the Digital Ground Game Discord server get in. Sessions outlive a
       // member leaving, so getCode checks membership again before issuing.
       async validateUserInfo({ source }) {
         const discordId = source.oauth?.profile?.id

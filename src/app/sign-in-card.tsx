@@ -7,7 +7,7 @@ import { signIn } from './actions'
 /** What to tell a member whose sign-in failed, by the error Better Auth sends back. */
 const SIGN_IN_ERRORS: Record<string, string> = {
   not_in_server:
-    'Your Discord account is not in the DGG Discord server. Join the server, then sign in again.',
+    'Your Discord account is not in the Digital Ground Game Discord server. Join the server, then sign in again.',
   discord_unavailable: 'Discord did not answer. Try signing in again in a minute.',
   discord_only: 'Sign in with Discord.',
 }

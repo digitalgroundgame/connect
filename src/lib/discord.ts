@@ -10,7 +10,7 @@ export { DiscordAPIError, RateLimitError }
 
 let client: REST | undefined
 
-/** The DGG bot, created on first use so a build needs no token. */
+/** The Digital Ground Game bot, created on first use so a build needs no token. */
 function bot(): REST {
   client ??= new REST({
     timeout: 8_000,
@@ -23,7 +23,7 @@ function bot(): REST {
   return client
 }
 
-/** Whether the user is in the DGG Discord server. */
+/** Whether the user is in the Digital Ground Game Discord server. */
 export async function isGuildMember(userId: string): Promise<boolean> {
   try {
     await bot().get(Routes.guildMember(process.env.DISCORD_GUILD_ID, userId))
