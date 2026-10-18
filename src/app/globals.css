@@ -31,9 +31,7 @@
   --input: oklch(0.88 0.006 264.5);
   --ring: #1144ff;
   --link: #1144ff;
-  /* The same in both schemes: the header bar and Discord's Blurple button. */
-  --brand: #1144ff;
-  --brand-foreground: oklch(1 0 0);
+  /* Discord's Blurple, the same in both schemes. */
   --discord: #5865f2;
   --discord-hover: #4752c4;
 }
@@ -45,7 +43,10 @@
   --card-foreground: oklch(0.94 0.005 285.9);
   --popover: oklch(0.21 0.006 285.9);
   --popover-foreground: oklch(0.94 0.005 285.9);
-  /* Buttons stay DGG blue; only links and focus rings lighten for contrast. */
+  /*
+   * Buttons stay DGG blue. Links and focus rings use DGG blue lightened only
+   * as far as AA needs (4.8:1 on cards): a paler blue reads as Discord's Blurple.
+   */
   --primary: #1144ff;
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.27 0.006 285.9);
@@ -57,8 +58,8 @@
   --destructive: oklch(0.7 0.19 22);
   --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 16%);
-  --ring: #8fa6ff;
-  --link: #8fa6ff;
+  --ring: #4d7cff;
+  --link: #4d7cff;
 }
 
 @theme inline {
@@ -84,8 +85,6 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-link: var(--link);
-  --color-brand: var(--brand);
-  --color-brand-foreground: var(--brand-foreground);
   --color-discord: var(--discord);
   --color-discord-hover: var(--discord-hover);
   --radius-sm: calc(var(--radius) - 4px);
@@ -99,7 +98,7 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground border-t-4 border-t-primary;
   }
   a:not([data-slot]) {
     @apply text-link underline underline-offset-2;
