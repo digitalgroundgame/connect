@@ -104,7 +104,7 @@ describe('getCode', () => {
     vi.mocked(isGuildMember).mockResolvedValue(false)
     expect(await getCode(idle, form())).toEqual({
       status: 'error',
-      message: 'Your Discord account is no longer in the DGG Discord server.',
+      message: 'Your Discord account is no longer in the Digital Ground Game Discord server.',
     })
     expect(issueCode).not.toHaveBeenCalled()
   })

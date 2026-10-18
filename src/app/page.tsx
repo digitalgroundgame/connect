@@ -11,8 +11,8 @@ export default async function Home({ searchParams }: PageProps<'/'>) {
   if (member === null) {
     return (
       <SignInCard
-        title="Codes for DGG tools"
-        description="Sign in with Discord to get a code for each Digital Ground Game tool you use, like the Hindsight OBS plugin. You need to be in the DGG Discord server."
+        title="Codes for Digital Ground Game tools"
+        description="Sign in with Discord to get a code for each Digital Ground Game tool you use, like the Hindsight OBS plugin. You need to be in the Digital Ground Game Discord server."
         error={(await searchParams).error}
         returnTo="/"
       />

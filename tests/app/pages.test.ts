@@ -193,7 +193,7 @@ describe('project page', () => {
     expect(html).toContain('Signed in as <strong>nelly</strong>')
     expect(html).toContain('not used yet.')
     expect(html).toContain('>Get a new code</button>')
-    expect(html).toContain('All DGG tools')
+    expect(html).toContain('All Digital Ground Game tools')
     expect(listEnabledProjects).not.toHaveBeenCalled()
   })
 

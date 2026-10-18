@@ -6,7 +6,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * shadcn/ui theme (base-nova, neutral) with DGG blue (#1144FF) as the primary
+ * shadcn/ui theme (base-nova, neutral) with Digital Ground Game blue (#1144FF) as the primary
  * color in both schemes; only the Discord sign-in button uses Discord's colors.
  * Every text color meets WCAG AA (4.5:1) on its background.
  */
@@ -44,7 +44,7 @@
   --popover: oklch(0.21 0.006 285.9);
   --popover-foreground: oklch(0.94 0.005 285.9);
   /*
-   * Buttons stay DGG blue. Links and focus rings use DGG blue lightened only
+   * Buttons stay Digital Ground Game blue. Links and focus rings use Digital Ground Game blue lightened only
    * as far as AA needs (4.8:1 on cards): a paler blue reads as Discord's Blurple.
    */
   --primary: #1144ff;

@@ -1,17 +1,17 @@
-# DGG Connect
+# Digital Ground Game Connect
 
 Sign in with Discord to get access codes for Digital Ground Game tools, like
-the Hindsight OBS plugin. Tools use their code to reach DGG services, such as
-Discord DMs from the DGG bot.
+the Hindsight OBS plugin. Tools use their code to reach Digital Ground Game services, such as
+Discord DMs from the Digital Ground Game bot.
 
-- Members of the DGG Discord server sign in with Discord and get one code per
+- Members of the Digital Ground Game Discord server sign in with Discord and get one code per
   tool ("project"). Getting a new code turns the old one off.
 - Each project has its own page at `/<slug>`, such as `/hindsight`, to share
   with the people who use it. Signing in there comes back to that page.
 - Admins add and edit projects at `/admin`, turn off any member's code, and
   make other members admins.
 - Tools send `Authorization: Bearer <code>` to the API below. A project that
-  is allowed to DM can have the DGG bot send the member a Discord message.
+  is allowed to DM can have the Digital Ground Game bot send the member a Discord message.
 
 Built with Next.js 16, Better Auth, Drizzle ORM on Postgres, and shadcn/ui on
 Tailwind CSS 4. Deployed as a Docker image on Coolify; see

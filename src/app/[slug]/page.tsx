@@ -28,7 +28,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps<'/
         codeStep
       )}
       <p>
-        <Link href="/">All DGG tools</Link>
+        <Link href="/">All Digital Ground Game tools</Link>
       </p>
     </div>
   )
@@ -43,8 +43,8 @@ async function codeStepFor(project: Project, error: string | string[] | undefine
         title={`Get a code for ${project.name}`}
         description={
           project.description === ''
-            ? 'Sign in with Discord to get your code. You need to be in the DGG Discord server.'
-            : `${project.description} Sign in with Discord to get your code. You need to be in the DGG Discord server.`
+            ? 'Sign in with Discord to get your code. You need to be in the Digital Ground Game Discord server.'
+            : `${project.description} Sign in with Discord to get your code. You need to be in the Digital Ground Game Discord server.`
         }
         error={error}
         returnTo={`/${project.slug}`}

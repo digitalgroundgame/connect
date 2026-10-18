@@ -43,16 +43,17 @@ const STATUS: Record<ErrorCode, number> = {
 
 /** Written for the member: tools are expected to show `message` as it is. */
 const MESSAGES: Record<ErrorCode, string> = {
-  invalid_request: 'The tool sent a request DGG Connect could not read. Update the tool.',
-  invalid_code: 'This code is not valid any more. Get a new one from DGG Connect.',
-  project_disabled: 'This tool is turned off in DGG Connect right now.',
+  invalid_request:
+    'The tool sent a request Digital Ground Game Connect could not read. Update the tool.',
+  invalid_code: 'This code is not valid any more. Get a new one from Digital Ground Game Connect.',
+  project_disabled: 'This tool is turned off in Digital Ground Game Connect right now.',
   dm_not_allowed: 'This tool is not allowed to send Discord messages.',
   dm_closed:
-    'The DGG bot cannot DM you. In the DGG Discord server, turn on Privacy Settings > Direct Messages.',
+    'The Digital Ground Game bot cannot DM you. In the Digital Ground Game Discord server, turn on Privacy Settings > Direct Messages.',
   too_large: 'The message is too long.',
   rate_limited: 'Too many messages. Wait a moment and try again.',
   discord_unavailable: 'Discord did not take the message. Try again in a minute.',
-  server_error: 'DGG Connect hit an error. Try again in a minute.',
+  server_error: 'Digital Ground Game Connect hit an error. Try again in a minute.',
 }
 
 export function errorResponse(error: ErrorCode, retryAfterSeconds?: number): Response {
@@ -108,11 +109,11 @@ export async function readMessage(
 }
 
 export function withFooter(content: string, projectName: string): string {
-  return `${content}\n\n-# Sent by ${projectName} through DGG Connect.`
+  return `${content}\n\n-# Sent by ${projectName} through Digital Ground Game Connect.`
 }
 
 export function testMessage(projectName: string): string {
-  return `${projectName} is linked to this Discord account. Its messages will arrive here.\n\n-# Test message from DGG Connect.`
+  return `${projectName} is linked to this Discord account. Its messages will arrive here.\n\n-# Test message from Digital Ground Game Connect.`
 }
 
 /** Only the message: a Discord error also carries the request body, which holds the DM text. */

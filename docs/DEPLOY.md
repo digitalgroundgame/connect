@@ -1,6 +1,6 @@
-# Deploying DGG Connect
+# Deploying Digital Ground Game Connect
 
-DGG Connect runs as one Docker container next to a Postgres database on
+Digital Ground Game Connect runs as one Docker container next to a Postgres database on
 Coolify, behind the Cloudflare proxy like every digitalgroundgame.org
 subdomain.
 
@@ -12,17 +12,17 @@ starts.
 
 ## 2. Discord
 
-In the Discord Developer Portal, open the existing DGG app (the one the DGG bot
+In the Discord Developer Portal, open the existing Digital Ground Game app (the one the Digital Ground Game bot
 uses):
 
 1. **OAuth2 > Redirects**: add `https://<host>/api/auth/callback/discord`.
 2. Copy the **Client ID** and **Client Secret** from OAuth2, and the bot token
-   the DGG bot already uses.
-3. Enable Developer Mode in Discord, then right-click the DGG server to copy its
+   the Digital Ground Game bot already uses.
+3. Enable Developer Mode in Discord, then right-click the Digital Ground Game server to copy its
    ID.
 
 Sign-in asks Discord only for the `identify` scope. The bot checks server
-membership and sends DMs, so it must stay in the DGG server.
+membership and sends DMs, so it must stay in the Digital Ground Game server.
 
 ## 3. Application
 
@@ -40,7 +40,7 @@ environment variables (see `.env.example` for details):
 | `DISCORD_CLIENT_ID`     | From step 2.                         |
 | `DISCORD_CLIENT_SECRET` | From step 2.                         |
 | `DISCORD_BOT_TOKEN`     | From step 2.                         |
-| `DISCORD_GUILD_ID`      | The DGG server ID.                   |
+| `DISCORD_GUILD_ID`      | The Digital Ground Game server ID.   |
 | `CLIENT_IP_HEADER`      | `cf-connecting-ip`                   |
 
 `CLIENT_IP_HEADER` must only be set when Cloudflare is in front: the header

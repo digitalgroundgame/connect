@@ -1,7 +1,7 @@
-# How Claude reviews DGG Connect pull requests
+# How Claude reviews Digital Ground Game Connect pull requests
 
-DGG Connect is a Next.js 16 app (Better Auth with Discord sign-in, Drizzle on Postgres,
-shadcn/ui on Tailwind CSS 4) that gives DGG members one access code per tool and relays
+Digital Ground Game Connect is a Next.js 16 app (Better Auth with Discord sign-in, Drizzle on Postgres,
+shadcn/ui on Tailwind CSS 4) that gives Digital Ground Game members one access code per tool and relays
 Discord DMs for those tools. Read `AGENTS.md` for the repo's conventions. Next.js 16 differs
 from older versions, and `node_modules` is not installed in this review, so don't flag Next.js
 API use from memory; ask about it instead. Explain each issue in plain terms and say how to

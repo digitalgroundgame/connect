@@ -48,7 +48,7 @@ export async function getCode(_previous: CodeState, form: FormData): Promise<Cod
   if (!(await isGuildMember(member.discordId))) {
     return {
       status: 'error',
-      message: 'Your Discord account is no longer in the DGG Discord server.',
+      message: 'Your Discord account is no longer in the Digital Ground Game Discord server.',
     }
   }
   const code = await issueCode(member.id, project.id)

@@ -6,7 +6,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: { default: 'DGG Connect', template: '%s · DGG Connect' },
+  title: { default: 'Digital Ground Game Connect', template: '%s · Digital Ground Game Connect' },
   description:
     'Sign in with Discord to get access codes for Digital Ground Game tools, like the Hindsight OBS plugin.',
   robots: { index: false, follow: false },
@@ -30,7 +30,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
               className="flex items-center gap-3 font-heading text-lg font-bold"
             >
               <Image src="/dgg-logo.png" alt="" width={40} height={40} className="rounded-lg" />
-              DGG Connect
+              Digital Ground Game Connect
             </Link>
             <ThemeToggle />
           </header>
