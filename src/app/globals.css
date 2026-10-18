@@ -47,7 +47,10 @@
     --card-foreground: oklch(0.94 0.005 285.9);
     --popover: oklch(0.21 0.006 285.9);
     --popover-foreground: oklch(0.94 0.005 285.9);
-    /* Buttons stay DGG blue; only links and focus rings lighten for contrast. */
+    /*
+     * Buttons stay DGG blue. Links and focus rings use DGG blue lightened only
+     * as far as AA needs (4.8:1 on cards): a paler blue reads as Discord's Blurple.
+     */
     --primary: #1144ff;
     --primary-foreground: oklch(1 0 0);
     --secondary: oklch(0.27 0.006 285.9);
@@ -59,8 +62,8 @@
     --destructive: oklch(0.7 0.19 22);
     --border: oklch(1 0 0 / 12%);
     --input: oklch(1 0 0 / 16%);
-    --ring: #8fa6ff;
-    --link: #8fa6ff;
+    --ring: #4d7cff;
+    --link: #4d7cff;
   }
 }
 
