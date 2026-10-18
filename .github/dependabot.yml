@@ -13,6 +13,9 @@ updates:
       # typescript-eslint (used by eslint-config-next) doesn't support TypeScript 7 yet.
       - dependency-name: typescript
         update-types: ['version-update:semver-major']
+      # eslint-config-next's react, jsx-a11y and import plugins don't support ESLint 10 yet.
+      - dependency-name: eslint
+        update-types: ['version-update:semver-major']
       # Keep Node's types on the Node version we run (.nvmrc and the Dockerfile).
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
