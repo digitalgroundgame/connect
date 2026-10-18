@@ -29,8 +29,14 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
               data-slot="brand"
               className="flex items-center gap-3 font-heading text-lg font-bold"
             >
-              <Image src="/dgg-logo.png" alt="" width={40} height={40} className="rounded-lg" />
-              Digital Ground Game Connect
+              <Image
+                src="/dgg-logo.png"
+                alt="Digital Ground Game"
+                width={40}
+                height={40}
+                className="rounded-lg"
+              />
+              Connect
             </Link>
             <ThemeToggle />
           </header>
