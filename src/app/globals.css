@@ -2,7 +2,7 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 
-/* next-themes puts .dark on <html> for the dark theme, or for System when the OS is dark. */
+/* @wrksz/themes puts .dark on <html> for the dark theme, or for System when the OS is dark. */
 @custom-variant dark (&:is(.dark *));
 
 /*

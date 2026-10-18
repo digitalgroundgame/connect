@@ -28,7 +28,7 @@ Focus on, in order:
 - **Bugs**: unhandled promise rejections, race conditions (two requests for a code, retried
   messages delivered twice), rate limits that can be bypassed or that lock out every client.
 - **Contrast**: text and UI colors stay at WCAG AA (4.5:1 for text) in both light and dark
-  mode (`src/app/globals.css`, where the `.dark` class from next-themes switches the theme).
+  mode (`src/app/globals.css`, where the `.dark` class from @wrksz/themes switches the theme).
 - **Tests**: new or changed logic in `src/lib`, `src/services` and `src/app/api` without
   tests under `tests/`.
 

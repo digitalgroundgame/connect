@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ThemeProvider } from 'next-themes'
+import { ThemeProvider } from '@wrksz/themes/next'
 import { ThemeToggle } from '@/components/theme-toggle'
 import './globals.css'
 
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
-    // next-themes sets the theme class on <html> before React hydrates.
+    // @wrksz/themes sets the theme class on <html> before React hydrates.
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen font-sans antialiased">
         <ThemeProvider
