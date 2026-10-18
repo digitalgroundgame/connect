@@ -37,8 +37,8 @@ export function HindsightGuide({
         <h1 className="font-heading text-2xl font-bold">Hindsight</h1>
         <p>
           Ask a question out loud on stream, press a hotkey, and Hindsight sends Claude&apos;s
-          answer to you as a Discord DM or to other destinations. It runs inside OBS 31.1 or newer
-          on Windows, transcribes your mic on your own PC, and uses your own Claude API key.
+          answer to you as a Discord DM or to your selected destination. It runs inside OBS 31.1 or
+          newer on Windows, transcribes your mic on your own PC, and uses your own Claude API key.
         </p>
         <p className="text-muted-foreground">
           Discord DMs come from the Digital Ground Game bot, so stay in the Digital Ground Game
